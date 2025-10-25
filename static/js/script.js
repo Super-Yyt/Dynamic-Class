@@ -167,14 +167,33 @@ function confirmAction(message, callback) {
 
 // 加载状态指示器
 function showLoading(container) {
-    const loader = document.createElement('div');
-    loader.className = 'loading';
-    loader.innerHTML = `
-        <div class="loading-spinner"></div>
-        <span>加载中...</span>
-    `;
-    container.appendChild(loader);
-    return loader;
+    // 如果 container 是布尔值，则使用默认的加载显示方式
+    if (typeof container === 'boolean') {
+        const loaders = document.querySelectorAll('.loading-overlay');
+        loaders.forEach(loader => {
+            loader.style.display = container ? 'flex' : 'none';
+        });
+        return null;
+    }
+
+    if (container && container.appendChild) {
+        const loader = document.createElement('div');
+        loader.className = 'loading';
+        loader.innerHTML = `
+            <div class="loading-spinner"></div>
+            <span>加载中...</span>
+        `;
+        container.appendChild(loader);
+        return loader;
+    }
+    
+    return null;
+}
+
+function hideLoading(loader) {
+    if (loader && loader.parentNode) {
+        loader.parentNode.removeChild(loader);
+    }
 }
 
 function hideLoading(loader) {

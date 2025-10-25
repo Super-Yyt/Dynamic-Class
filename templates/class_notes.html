@@ -589,7 +589,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 加载笔记列表
 async function loadNotes() {
-    showLoading(true);
+    showNotesLoading(true);
     
     try {
         const params = new URLSearchParams({
@@ -604,22 +604,23 @@ async function loadNotes() {
         if (result.success) {
             renderNotesTable(result.notes);
             updatePagination(result.pagination);
+            updateStats(result.notes); // 更新统计信息
         } else {
             throw new Error(result.error || '加载笔记列表失败');
         }
     } catch (error) {
         console.error('Error:', error);
-        showMessage('加载笔记列表失败: ' + error.message, 'error');
+        showNotesMessage('加载笔记列表失败: ' + error.message, 'error');
     } finally {
-        showLoading(false);
+        showNotesLoading(false);
     }
 }
 
-// 加载统计信息
+// 加载统计信息（从服务器获取）
 async function loadStats() {
     try {
-        // 这里可以调用专门的统计接口，或者从笔记列表中计算
-        // 暂时使用模拟数据
+        // 这里可以调用专门的统计接口
+        // 暂时使用笔记列表来计算
         const response = await fetch(`/web/notes/classes/{{ class_obj.id }}/notes?per_page=1000`);
         const result = await response.json();
         
@@ -634,7 +635,7 @@ async function loadStats() {
 // 更新统计信息
 function updateStats(notes) {
     const totalNotes = notes.length;
-    const totalSize = notes.reduce((sum, note) => sum + note.file_size, 0);
+    const totalSize = notes.reduce((sum, note) => sum + (note.file_size || 0), 0);
     const pdfCount = notes.filter(note => note.file_type === 'pdf').length;
     const imageCount = notes.filter(note => 
         ['png', 'jpg', 'jpeg', 'gif', 'bmp'].includes(note.file_type)
@@ -650,14 +651,17 @@ function updateStats(notes) {
 function renderNotesTable(notes) {
     const tbody = document.getElementById('notes-table-body');
     const emptyState = document.getElementById('empty-state');
+    const pagination = document.getElementById('pagination');
     
-    if (notes.length === 0) {
+    if (!notes || notes.length === 0) {
         tbody.innerHTML = '';
         emptyState.style.display = 'block';
+        pagination.style.display = 'none';
         return;
     }
     
     emptyState.style.display = 'none';
+    pagination.style.display = 'flex';
     
     tbody.innerHTML = notes.map(note => `
         <tr>
@@ -669,18 +673,19 @@ function renderNotesTable(notes) {
                     <div class="file-details">
                         <div class="file-name">${escapeHtml(note.title || note.original_filename)}</div>
                         <div class="file-meta">
-                            ${note.file_type.toUpperCase()} • 
-                            ${new Date(note.created_at).toLocaleDateString('zh-CN')}
+                            ${note.file_type ? note.file_type.toUpperCase() + ' • ' : ''}
+                            ${note.created_at ? new Date(note.created_at).toLocaleDateString('zh-CN') : '未知日期'}
                             ${note.tags ? '• ' + note.tags : ''}
                         </div>
+                        ${note.description ? `<div class="file-description" style="margin-top: 4px; color: #7f8c8d; font-size: 12px;">${escapeHtml(note.description)}</div>` : ''}
                     </div>
                 </div>
             </td>
             <td>${escapeHtml(note.whiteboard_name || '未知白板')}</td>
             <td>${escapeHtml(note.uploader_name || '未知用户')}</td>
-            <td>${note.file_size_formatted}</td>
-            <td>${note.download_count}</td>
-            <td>${new Date(note.created_at).toLocaleDateString('zh-CN')}</td>
+            <td>${note.file_size_formatted || formatFileSize(note.file_size)}</td>
+            <td>${note.download_count || 0}</td>
+            <td>${note.created_at ? new Date(note.created_at).toLocaleDateString('zh-CN') : '未知'}</td>
             <td>
                 <div class="actions-cell">
                     <button class="action-icon action-download" onclick="downloadNote(${note.id})" title="下载">
@@ -709,13 +714,16 @@ function getFileIcon(fileType) {
         'doc': 'description',
         'docx': 'description',
         'ppt': 'slideshow',
-        'pptx': 'slideshow'
+        'pptx': 'slideshow',
+        'zip': 'folder_zip',
+        'rar': 'folder_zip'
     };
     return iconMap[fileType] || 'insert_drive_file';
 }
 
 // 格式化文件大小
 function formatFileSize(bytes) {
+    if (!bytes) return '0 B';
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
@@ -730,17 +738,17 @@ function updatePagination(pagination) {
     const prevBtn = document.getElementById('prev-page');
     const nextBtn = document.getElementById('next-page');
     
-    if (pagination.pages <= 1) {
+    if (!pagination || pagination.pages <= 1) {
         paginationEl.style.display = 'none';
         return;
     }
     
     paginationEl.style.display = 'flex';
-    currentPage = pagination.page;
-    totalPages = pagination.pages;
+    currentPage = pagination.page || 1;
+    totalPages = pagination.pages || 1;
     
     // 更新分页信息
-    paginationInfo.textContent = `第 ${pagination.page} 页，共 ${pagination.pages} 页，${pagination.total} 条记录`;
+    paginationInfo.textContent = `第 ${currentPage} 页，共 ${totalPages} 页，${pagination.total || 0} 条记录`;
     
     // 更新页码按钮
     pageNumbers.innerHTML = '';
@@ -756,8 +764,8 @@ function updatePagination(pagination) {
     }
     
     // 更新按钮状态
-    prevBtn.disabled = !pagination.has_prev;
-    nextBtn.disabled = !pagination.has_next;
+    prevBtn.disabled = currentPage <= 1;
+    nextBtn.disabled = currentPage >= totalPages;
 }
 
 // 切换页面
@@ -785,7 +793,16 @@ function applyFilters() {
     
     if (search) currentFilters.search = search;
     if (whiteboard) currentFilters.whiteboard_id = whiteboard;
-    if (filetype) currentFilters.file_type = filetype;
+    if (filetype) {
+        // 将前端分类映射到实际文件类型
+        const typeMap = {
+            'pdf': 'pdf',
+            'image': 'png,jpg,jpeg,gif,bmp',
+            'document': 'doc,docx,ppt,pptx,txt,md',
+            'other': 'zip,rar'
+        };
+        currentFilters.file_type = typeMap[filetype] || filetype;
+    }
     if (sortBy) currentFilters.sort_by = sortBy;
     
     currentPage = 1;
@@ -794,7 +811,7 @@ function applyFilters() {
 
 // 下载笔记
 function downloadNote(noteId) {
-    window.open(`/uploads/{{ class_obj.id }}/notes/${noteId}/download`, '_blank');
+    window.open(`/web/notes/notes/${noteId}/download`, '_blank');
 }
 
 // 显示删除确认对话框
@@ -821,7 +838,7 @@ async function confirmDelete() {
         const result = await response.json();
         
         if (result.success) {
-            showMessage('笔记删除成功', 'success');
+            showNotesMessage('笔记删除成功', 'success');
             closeDeleteModal();
             loadNotes();
             loadStats();
@@ -830,7 +847,7 @@ async function confirmDelete() {
         }
     } catch (error) {
         console.error('Error:', error);
-        showMessage('删除失败: ' + error.message, 'error');
+        showNotesMessage('删除失败: ' + error.message, 'error');
     }
 }
 
@@ -838,16 +855,16 @@ async function confirmDelete() {
 function refreshNotes() {
     loadNotes();
     loadStats();
-    showMessage('笔记列表已刷新', 'success');
+    showNotesMessage('笔记列表已刷新', 'success');
 }
 
 // 显示/隐藏加载状态
-function showLoading(show) {
+function showNotesLoading(show) {
     document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
 }
 
 // 显示消息提示
-function showMessage(message, type = 'success') {
+function showNotesMessage(message, type = 'success') {
     // 移除现有消息
     const existingMessages = document.querySelectorAll('.message');
     existingMessages.forEach(msg => msg.remove());
@@ -871,6 +888,7 @@ function showMessage(message, type = 'success') {
 
 // HTML转义
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
