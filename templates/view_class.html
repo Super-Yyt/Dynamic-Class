@@ -62,6 +62,15 @@
             <h3 class="feature-title">学生管理</h3>
             <p class="feature-description">管理班级中的学生</p>
         </div>
+        
+        <div class="feature-card" onclick="location.href='{{ url_for('web_notes.class_notes_page', class_id=class_obj.id) }}'" style="cursor: pointer;">
+            <div class="feature-icon">
+                <i class="material-icons">note</i>
+            </div>
+            <h3 class="feature-title">笔记管理</h3>
+            <p class="feature-description">查看和管理班级笔记</p>
+        </div>
+    </div>
     
     <h2 class="section-title">白板设备</h2>
     <div class="whiteboards-grid" id="whiteboards-container">

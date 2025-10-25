@@ -1,0 +1,886 @@
+{% extends "base.html" %}
+
+{% block title %}笔记管理 - {{ class_obj.name }} - Dlass{% endblock %}
+
+{% block extra_css %}
+<style>
+.notes-management-container {
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* 页面标题区域 */
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding: 0 8px;
+}
+
+.notes-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.notes-subtitle {
+    color: #7f8c8d;
+    margin-top: 4px;
+}
+
+.notes-actions {
+    display: flex;
+    gap: 12px;
+}
+
+/* 统计卡片 */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #3498db;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    color: #7f8c8d;
+    font-size: 14px;
+}
+
+/* 筛选和搜索区域 */
+.filters-section {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.filters-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr auto;
+    gap: 16px;
+    align-items: end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-label {
+    font-weight: 500;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.filter-select {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+}
+
+.filter-select:focus {
+    outline: none;
+    border-color: #3498db;
+}
+
+/* 笔记表格 */
+.notes-table-container {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.notes-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.notes-table th {
+    background: #f8f9fa;
+    padding: 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #2c3e50;
+    border-bottom: 2px solid #ecf0f1;
+    font-size: 14px;
+}
+
+.notes-table td {
+    padding: 16px;
+    border-bottom: 1px solid #ecf0f1;
+    font-size: 14px;
+}
+
+.notes-table tr:hover {
+    background: #f8f9fa;
+}
+
+/* 文件信息列 */
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.file-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e3f2fd;
+    border-radius: 8px;
+    color: #3498db;
+    font-size: 18px;
+}
+
+.file-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.file-name {
+    font-weight: 500;
+    color: #2c3e50;
+    margin-bottom: 2px;
+}
+
+.file-meta {
+    color: #7f8c8d;
+    font-size: 12px;
+}
+
+/* 标签样式 */
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.tag {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* 状态标签 */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-archived {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+/* 操作按钮 */
+.actions-cell {
+    display: flex;
+    gap: 8px;
+}
+
+.action-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #7f8c8d;
+    background: none;
+}
+
+.action-icon:hover {
+    background: #f8f9fa;
+}
+
+.action-download:hover {
+    color: #3498db;
+}
+
+.action-delete:hover {
+    color: #e74c3c;
+    background: #fadbd8;
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #95a5a6;
+}
+
+.empty-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    color: #bdc3c7;
+}
+
+.empty-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #7f8c8d;
+}
+
+.empty-description {
+    margin-bottom: 24px;
+}
+
+/* 分页 */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border-top: 1px solid #ecf0f1;
+}
+
+.pagination-info {
+    color: #7f8c8d;
+    font-size: 14px;
+}
+
+.pagination-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.pagination-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid #ecf0f1;
+    background: white;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #7f8c8d;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    border-color: #3498db;
+    color: #3498db;
+}
+
+.pagination-btn:disabled {
+    background: #f8f9fa;
+    color: #bdc3c7;
+    cursor: not-allowed;
+}
+
+.pagination-btn.active {
+    background: #3498db;
+    border-color: #3498db;
+    color: white;
+}
+
+/* 加载状态 */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+    .filters-row {
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+    
+    .notes-table {
+        font-size: 13px;
+    }
+    
+    .notes-table th,
+    .notes-table td {
+        padding: 12px 8px;
+    }
+}
+
+@media (max-width: 768px) {
+    .notes-management-container {
+        padding: 12px;
+    }
+    
+    .notes-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+    
+    .notes-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .filters-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    /* 表格响应式 */
+    .notes-table-container {
+        overflow-x: auto;
+    }
+    
+    .notes-table {
+        min-width: 800px;
+    }
+    
+    .file-info {
+        min-width: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .notes-table th:nth-child(4),
+    .notes-table td:nth-child(4),
+    .notes-table th:nth-child(5),
+    .notes-table td:nth-child(5) {
+        display: none;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notes-management-container">
+    <!-- 页面标题 -->
+    <div class="notes-header">
+        <div>
+            <h1 class="notes-title">笔记管理</h1>
+            <p class="notes-subtitle">班级: {{ class_obj.name }} | 管理所有白板笔记文件</p>
+        </div>
+        <div class="notes-actions">
+            <button class="action-btn" onclick="refreshNotes()" title="刷新">
+                <i class="material-icons">refresh</i>
+                <span>刷新</span>
+            </button>
+            <a href="{{ url_for('classes.view_class', class_id=class_obj.id) }}" class="outline-btn">
+                <i class="material-icons">arrow_back</i>
+                <span>返回班级</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 统计信息 -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value" id="total-notes">0</div>
+            <div class="stat-label">总笔记数</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="total-size">0</div>
+            <div class="stat-label">总大小</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="pdf-count">0</div>
+            <div class="stat-label">PDF文件</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="image-count">0</div>
+            <div class="stat-label">图片文件</div>
+        </div>
+    </div>
+
+    <!-- 筛选和搜索 -->
+    <div class="filters-section">
+        <div class="filters-row">
+            <div class="filter-group">
+                <label class="filter-label">搜索笔记</label>
+                <input type="text" id="search-input" class="search-input" placeholder="搜索文件名、标题、描述...">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">白板筛选</label>
+                <select id="whiteboard-filter" class="filter-select">
+                    <option value="">所有白板</option>
+                    {% for whiteboard in whiteboards %}
+                    <option value="{{ whiteboard.id }}">{{ whiteboard.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">文件类型</label>
+                <select id="filetype-filter" class="filter-select">
+                    <option value="">所有类型</option>
+                    <option value="pdf">PDF文档</option>
+                    <option value="image">图片文件</option>
+                    <option value="document">办公文档</option>
+                    <option value="other">其他文件</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">排序方式</label>
+                <select id="sort-by" class="filter-select">
+                    <option value="created_at">上传时间</option>
+                    <option value="filename">文件名</option>
+                    <option value="file_size">文件大小</option>
+                    <option value="download_count">下载次数</option>
+                </select>
+            </div>
+            <button class="primary-btn" onclick="applyFilters()">
+                <i class="material-icons">search</i>
+                <span>搜索</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 笔记表格 -->
+    <div class="notes-table-container">
+        <div style="position: relative;">
+            <div id="loading-overlay" class="loading-overlay" style="display: none;">
+                <div class="loading-spinner"></div>
+            </div>
+            
+            <table class="notes-table">
+                <thead>
+                    <tr>
+                        <th>文件信息</th>
+                        <th>白板</th>
+                        <th>上传者</th>
+                        <th>文件大小</th>
+                        <th>下载次数</th>
+                        <th>上传时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="notes-table-body">
+                    <!-- 笔记数据将通过JavaScript动态加载 -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 空状态 -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <div class="empty-content">
+                <i class="material-icons empty-icon">note</i>
+                <h3 class="empty-title">暂无笔记</h3>
+                <p class="empty-description">该班级还没有上传任何笔记文件</p>
+            </div>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination" id="pagination" style="display: none;">
+            <div class="pagination-info" id="pagination-info"></div>
+            <div class="pagination-controls">
+                <button class="pagination-btn" id="prev-page" onclick="changePage(-1)">
+                    <i class="material-icons">chevron_left</i>
+                </button>
+                <div id="page-numbers"></div>
+                <button class="pagination-btn" id="next-page" onclick="changePage(1)">
+                    <i class="material-icons">chevron_right</i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 确认删除对话框 -->
+<div id="delete-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 24px; border-radius: 12px; max-width: 400px; width: 90%;">
+        <h3 style="margin-bottom: 16px; color: #2c3e50;">确认删除</h3>
+        <p style="margin-bottom: 24px; color: #7f8c8d;">确定要删除这个笔记文件吗？此操作不可恢复。</p>
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+            <button onclick="closeDeleteModal()" class="outline-btn">取消</button>
+            <button onclick="confirmDelete()" class="primary-btn" style="background: #e74c3c;">确认删除</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// 全局变量
+let currentPage = 1;
+let totalPages = 1;
+let currentFilters = {};
+let noteToDelete = null;
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    loadNotes();
+    loadStats();
+});
+
+// 加载笔记列表
+async function loadNotes() {
+    showLoading(true);
+    
+    try {
+        const params = new URLSearchParams({
+            page: currentPage,
+            per_page: 20,
+            ...currentFilters
+        });
+        
+        const response = await fetch(`/web/notes/classes/{{ class_obj.id }}/notes?${params}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            renderNotesTable(result.notes);
+            updatePagination(result.pagination);
+        } else {
+            throw new Error(result.error || '加载笔记列表失败');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('加载笔记列表失败: ' + error.message, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// 加载统计信息
+async function loadStats() {
+    try {
+        // 这里可以调用专门的统计接口，或者从笔记列表中计算
+        // 暂时使用模拟数据
+        const response = await fetch(`/web/notes/classes/{{ class_obj.id }}/notes?per_page=1000`);
+        const result = await response.json();
+        
+        if (result.success) {
+            updateStats(result.notes);
+        }
+    } catch (error) {
+        console.error('加载统计信息失败:', error);
+    }
+}
+
+// 更新统计信息
+function updateStats(notes) {
+    const totalNotes = notes.length;
+    const totalSize = notes.reduce((sum, note) => sum + note.file_size, 0);
+    const pdfCount = notes.filter(note => note.file_type === 'pdf').length;
+    const imageCount = notes.filter(note => 
+        ['png', 'jpg', 'jpeg', 'gif', 'bmp'].includes(note.file_type)
+    ).length;
+    
+    document.getElementById('total-notes').textContent = totalNotes;
+    document.getElementById('total-size').textContent = formatFileSize(totalSize);
+    document.getElementById('pdf-count').textContent = pdfCount;
+    document.getElementById('image-count').textContent = imageCount;
+}
+
+// 渲染笔记表格
+function renderNotesTable(notes) {
+    const tbody = document.getElementById('notes-table-body');
+    const emptyState = document.getElementById('empty-state');
+    
+    if (notes.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+    }
+    
+    emptyState.style.display = 'none';
+    
+    tbody.innerHTML = notes.map(note => `
+        <tr>
+            <td>
+                <div class="file-info">
+                    <div class="file-icon">
+                        <i class="material-icons">${getFileIcon(note.file_type)}</i>
+                    </div>
+                    <div class="file-details">
+                        <div class="file-name">${escapeHtml(note.title || note.original_filename)}</div>
+                        <div class="file-meta">
+                            ${note.file_type.toUpperCase()} • 
+                            ${new Date(note.created_at).toLocaleDateString('zh-CN')}
+                            ${note.tags ? '• ' + note.tags : ''}
+                        </div>
+                    </div>
+                </div>
+            </td>
+            <td>${escapeHtml(note.whiteboard_name || '未知白板')}</td>
+            <td>${escapeHtml(note.uploader_name || '未知用户')}</td>
+            <td>${note.file_size_formatted}</td>
+            <td>${note.download_count}</td>
+            <td>${new Date(note.created_at).toLocaleDateString('zh-CN')}</td>
+            <td>
+                <div class="actions-cell">
+                    <button class="action-icon action-download" onclick="downloadNote(${note.id})" title="下载">
+                        <i class="material-icons">download</i>
+                    </button>
+                    <button class="action-icon action-delete" onclick="showDeleteModal(${note.id})" title="删除">
+                        <i class="material-icons">delete</i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// 获取文件类型图标
+function getFileIcon(fileType) {
+    const iconMap = {
+        'pdf': 'picture_as_pdf',
+        'png': 'image',
+        'jpg': 'image',
+        'jpeg': 'image',
+        'gif': 'image',
+        'bmp': 'image',
+        'txt': 'description',
+        'md': 'description',
+        'doc': 'description',
+        'docx': 'description',
+        'ppt': 'slideshow',
+        'pptx': 'slideshow'
+    };
+    return iconMap[fileType] || 'insert_drive_file';
+}
+
+// 格式化文件大小
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+}
+
+// 更新分页
+function updatePagination(pagination) {
+    const paginationEl = document.getElementById('pagination');
+    const paginationInfo = document.getElementById('pagination-info');
+    const pageNumbers = document.getElementById('page-numbers');
+    const prevBtn = document.getElementById('prev-page');
+    const nextBtn = document.getElementById('next-page');
+    
+    if (pagination.pages <= 1) {
+        paginationEl.style.display = 'none';
+        return;
+    }
+    
+    paginationEl.style.display = 'flex';
+    currentPage = pagination.page;
+    totalPages = pagination.pages;
+    
+    // 更新分页信息
+    paginationInfo.textContent = `第 ${pagination.page} 页，共 ${pagination.pages} 页，${pagination.total} 条记录`;
+    
+    // 更新页码按钮
+    pageNumbers.innerHTML = '';
+    const startPage = Math.max(1, currentPage - 2);
+    const endPage = Math.min(totalPages, currentPage + 2);
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+        pageBtn.textContent = i;
+        pageBtn.onclick = () => goToPage(i);
+        pageNumbers.appendChild(pageBtn);
+    }
+    
+    // 更新按钮状态
+    prevBtn.disabled = !pagination.has_prev;
+    nextBtn.disabled = !pagination.has_next;
+}
+
+// 切换页面
+function changePage(delta) {
+    const newPage = currentPage + delta;
+    if (newPage >= 1 && newPage <= totalPages) {
+        goToPage(newPage);
+    }
+}
+
+// 跳转到指定页面
+function goToPage(page) {
+    currentPage = page;
+    loadNotes();
+}
+
+// 应用筛选条件
+function applyFilters() {
+    currentFilters = {};
+    
+    const search = document.getElementById('search-input').value;
+    const whiteboard = document.getElementById('whiteboard-filter').value;
+    const filetype = document.getElementById('filetype-filter').value;
+    const sortBy = document.getElementById('sort-by').value;
+    
+    if (search) currentFilters.search = search;
+    if (whiteboard) currentFilters.whiteboard_id = whiteboard;
+    if (filetype) currentFilters.file_type = filetype;
+    if (sortBy) currentFilters.sort_by = sortBy;
+    
+    currentPage = 1;
+    loadNotes();
+}
+
+// 下载笔记
+function downloadNote(noteId) {
+    window.open(`/uploads/{{ class_obj.id }}/notes/${noteId}/download`, '_blank');
+}
+
+// 显示删除确认对话框
+function showDeleteModal(noteId) {
+    noteToDelete = noteId;
+    document.getElementById('delete-modal').style.display = 'flex';
+}
+
+// 关闭删除确认对话框
+function closeDeleteModal() {
+    noteToDelete = null;
+    document.getElementById('delete-modal').style.display = 'none';
+}
+
+// 确认删除
+async function confirmDelete() {
+    if (!noteToDelete) return;
+    
+    try {
+        const response = await fetch(`/web/notes/notes/${noteToDelete}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showMessage('笔记删除成功', 'success');
+            closeDeleteModal();
+            loadNotes();
+            loadStats();
+        } else {
+            throw new Error(result.error || '删除失败');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('删除失败: ' + error.message, 'error');
+    }
+}
+
+// 刷新笔记列表
+function refreshNotes() {
+    loadNotes();
+    loadStats();
+    showMessage('笔记列表已刷新', 'success');
+}
+
+// 显示/隐藏加载状态
+function showLoading(show) {
+    document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+}
+
+// 显示消息提示
+function showMessage(message, type = 'success') {
+    // 移除现有消息
+    const existingMessages = document.querySelectorAll('.message');
+    existingMessages.forEach(msg => msg.remove());
+    
+    const messageEl = document.createElement('div');
+    messageEl.className = `message ${type}`;
+    messageEl.innerHTML = `
+        <div class="message-content">
+            <i class="material-icons message-icon">${type === 'error' ? 'error' : 'check_circle'}</i>
+            <span class="message-text">${message}</span>
+        </div>
+    `;
+    document.body.appendChild(messageEl);
+    
+    setTimeout(() => {
+        if (document.body.contains(messageEl)) {
+            messageEl.remove();
+        }
+    }, 3000);
+}
+
+// HTML转义
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// 监听搜索输入框的Enter键
+document.getElementById('search-input').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        applyFilters();
+    }
+});
+</script>
+{% endblock %}

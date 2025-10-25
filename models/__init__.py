@@ -6,6 +6,7 @@ from .assignment import Assignment
 from .announcement import Announcement
 from .message import Message
 from .system_setting import SystemSetting
+from .note import Note
 
 __all__ = [
     'User',
@@ -19,5 +20,6 @@ __all__ = [
     'Assignment',
     'Announcement',
     'Message',
-    'SystemSetting'
+    'SystemSetting',
+    'Note'
 ]
