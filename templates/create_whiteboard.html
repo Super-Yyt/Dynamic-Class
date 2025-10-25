@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}创建白板 - Dlass{% endblock %}
+
+{% block content %}
+<div class="create-whiteboard-container">
+    <div class="form-container">
+        <div class="form-header">
+            <h1 class="form-title">为 {{ class_obj.name }} 创建白板</h1>
+            <a href="{{ url_for('classes.view_class', class_id=class_obj.id) }}" class="back-link">
+                <i class="material-icons">arrow_back</i>
+                <span>返回班级详情</span>
+            </a>
+        </div>
+        
+        <div class="form-card">
+            <div class="card-content">
+                <form method="POST" class="whiteboard-form">
+                    <div class="form-group">
+                        <label for="name" class="form-label">白板名称</label>
+                        <input type="text" id="name" name="name" class="form-input" required>
+                    </div>
+                    
+                    <div class="form-info">
+                        <p class="info-text">
+                            创建后将生成唯一的白板ID和密钥，用于白板客户端连接。
+                        </p>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="primary-btn">
+                            <span class="btn-label">创建白板</span>
+                        </button>
+                        <a href="{{ url_for('classes.view_class', class_id=class_obj.id) }}" class="outline-btn">
+                            <span class="btn-label">取消</span>
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

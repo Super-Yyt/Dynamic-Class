@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}登录 - Dlass{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-layout">
+        <div class="login-card-container">
+            <div class="login-card">
+                <div class="card-content">
+                    <h2 class="login-title">登录班级管理系统</h2>
+                    <p class="login-subtitle">请选择您的身份进行登录</p>
+                    
+                    <div class="login-actions">
+                        <a href="{{ url_for('auth.casdoor_login_teacher') }}" class="primary-btn large-btn teacher-login-btn">
+                            <i class="material-icons btn-icon">school</i>
+                            <span class="btn-label">教师登录</span>
+                        </a>
+                        
+                        <div class="login-divider">
+                            <span>或</span>
+                        </div>
+                        
+                        <a href="{{ url_for('auth.casdoor_login_student') }}" class="outline-btn large-btn student-login-btn">
+                            <i class="material-icons btn-icon">person</i>
+                            <span class="btn-label">学生登录</span>
+                        </a>
+                    </div>
+                    
+                    <div class="login-footer">
+                        <p class="footer-text">使用不同的认证应用登录</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="login-info-container">
+            <div class="login-info">
+                <h2 class="info-title">统一身份认证</h2>
+                <p class="info-description">使用Casdoor SSO单点登录系统，安全便捷地访问班级管理系统。</p>
+                
+                <div class="app-info-grid">
+                    <div class="app-card teacher-app">
+                        <div class="app-card-content">
+                            <h3 class="app-card-title">教师认证应用</h3>
+                            <p class="app-card-description">专为教师设计的认证系统，提供更高级别的安全保护和权限管理。</p>
+                        </div>
+                    </div>
+                    
+                    <div class="app-card student-app">
+                        <div class="app-card-content">
+                            <h3 class="app-card-title">学生认证应用</h3>
+                            <p class="app-card-description">为学生设计的简化认证流程，方便快捷地访问学习资源。</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <i class="material-icons feature-icon">security</i>
+                        <span class="feature-text">安全认证</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="material-icons feature-icon">convenience</i>
+                        <span class="feature-text">一键登录</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="material-icons feature-icon">autorenew</i>
+                        <span class="feature-text">自动账户同步</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

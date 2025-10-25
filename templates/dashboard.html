@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}仪表板 - Dlass{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">欢迎回来, {{ username }}!</h1>
+        <p class="dashboard-subtitle">您的角色: {{ role }}</p>
+    </div>
+    
+    <div class="dashboard-grid">
+        <div class="dashboard-card">
+            <div class="card-content">
+                <h2 class="card-title">最近活动</h2>
+                <div class="card-body">
+                    <p class="card-text">您最近登录时间: {{ last_login if last_login else '首次登录' }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dashboard-card">
+            <div class="card-content">
+                <h2 class="card-title">系统信息</h2>
+                <div class="card-body">
+                    <p class="card-text">使用教程<a href="https://law.dlass.tech/help">点击访问</a></p>
+                    <p class="card-text">班级管理系统版本: 1.0.0</p>
+                    <p class="card-text">当前时区: UTC+8 (北京时间)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

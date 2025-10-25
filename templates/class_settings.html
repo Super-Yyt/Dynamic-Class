@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}班级设置 - {{ class_obj.name }}{% endblock %}
+
+{% block content %}
+<div class="class-settings-container">
+    <div class="settings-header">
+        <h1 class="settings-title">{{ class_obj.name }} - 班级设置</h1>
+        <a href="{{ url_for('classes.view_class', class_id=class_obj.id) }}" class="back-link">
+            <i class="material-icons">arrow_back</i>
+            <span>返回班级详情</span>
+        </a>
+    </div>
+
+    <div class="settings-grid">
+        <!-- 学科设置 -->
+        <div class="settings-card">
+            <div class="card-content">
+                <h2 class="card-title">班级学科设置</h2>
+                <p class="card-description">设置本班级教授的学科列表</p>
+                
+                <form method="POST" action="{{ url_for('settings.update_class_subjects', class_id=class_obj.id) }}" class="settings-form">
+                    <div class="form-group">
+                        <label for="subjects" class="form-label">学科列表（用逗号分隔）</label>
+                        <input type="text" id="subjects" name="subjects" class="form-input" 
+                               value="{{ class_subjects }}" placeholder="例如: 语文,数学,英语,物理,化学">
+                    </div>
+                    <div class="form-hint">
+                        例如: 语文,数学,英语,物理,化学
+                    </div>
+                    <button type="submit" class="primary-btn">
+                        <span class="btn-label">保存学科设置</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 邀请授课老师 -->
+        <div class="settings-card">
+            <div class="card-content">
+                <h2 class="card-title">邀请授课老师</h2>
+                <p class="card-description">邀请其他老师加入班级共同管理</p>
+                
+                <form method="POST" action="{{ url_for('settings.invite_teachers', class_id=class_obj.id) }}" class="settings-form">
+                    <div class="form-group">
+                        <label for="teacher_emails" class="form-label">老师邮箱（每行一个邮箱）</label>
+                        <textarea id="teacher_emails" name="teacher_emails" class="form-textarea" 
+                                  rows="5" placeholder="请输入老师的邮箱地址，每行一个"></textarea>
+                    </div>
+                    <div class="form-hint">
+                        系统将自动发送邀请邮件，老师加入后需要您分配学科才能管理班级
+                    </div>
+                    <button type="submit" class="primary-btn">
+                        <span class="btn-label">发送邀请</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 教师管理 -->
+        <div class="settings-card full-width">
+            <div class="card-content">
+                <h2 class="card-title">教师管理</h2>
+                <p class="card-description">管理已加入班级的授课老师</p>
+                
+                <div class="teachers-list">
+                    {% for teacher_class in teaching_teachers %}
+                    <div class="teacher-item">
+                        <div class="teacher-info">
+                            <div class="teacher-name">{{ teacher_class.teacher.username }}</div>
+                            <div class="teacher-email">{{ teacher_class.teacher.email or '未设置邮箱' }}</div>
+                            <div class="teacher-status">
+                                <span class="status-badge {{ 'approved' if teacher_class.is_approved else 'pending' }}">
+                                    {{ '已批准' if teacher_class.is_approved else '待批准' }}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="teacher-actions">
+                            {% if teacher_class.is_approved %}
+                            <form method="POST" action="{{ url_for('settings.update_teacher_subjects', class_id=class_obj.id, teacher_id=teacher_class.teacher.id) }}" class="teacher-subjects-form">
+                                <div class="form-group">
+                                    <label>分配学科</label>
+                                    <div class="subjects-checkbox-group">
+                                        {% for subject in class_subjects_list %}
+                                        <label class="checkbox-label">
+                                            <input type="checkbox" name="subjects" value="{{ subject }}" 
+                                                   {{ 'checked' if subject in teacher_class.get_assigned_subjects_list() }}>
+                                            <span class="checkbox-custom"></span>
+                                            {{ subject }}
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <button type="submit" class="outline-btn small-btn">
+                                    <span>更新学科</span>
+                                </button>
+                            </form>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('settings.approve_teacher', class_id=class_obj.id, teacher_id=teacher_class.teacher.id) }}" class="approve-form">
+                                <button type="submit" class="primary-btn small-btn">
+                                    <span>批准加入</span>
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            <form method="POST" action="{{ url_for('settings.remove_teacher', class_id=class_obj.id, teacher_id=teacher_class.teacher.id) }}" 
+                                  onsubmit="return confirm('确定要移除此老师吗？')">
+                                <button type="submit" class="outline-btn small-btn danger">
+                                    <span>移除</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <p>暂无其他授课老师</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.class-settings-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.settings-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.settings-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.settings-card.full-width {
+    grid-column: 1 / -1;
+}
+
+.card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #2c3e50;
+}
+
+.card-description {
+    color: #7f8c8d;
+    margin-bottom: 20px;
+}
+
+.settings-form {
+    margin-top: 16px;
+}
+
+.teachers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.teacher-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+.teacher-info {
+    flex: 1;
+}
+
+.teacher-name {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 4px;
+}
+
+.teacher-email {
+    color: #7f8c8d;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.teacher-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.teacher-subjects-form {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.subjects-checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-badge.approved {
+    background: #d4efdf;
+    color: #27ae60;
+}
+
+.status-badge.pending {
+    background: #fdebd0;
+    color: #f39c12;
+}
+
+.approve-form {
+    margin: 0;
+}
+
+.danger {
+    color: #e74c3c;
+    border-color: #e74c3c;
+}
+
+.danger:hover {
+    background: #e74c3c;
+    color: white;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #95a5a6;
+}
+
+@media (max-width: 768px) {
+    .settings-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .teacher-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .teacher-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+</style>
+{% endblock %}

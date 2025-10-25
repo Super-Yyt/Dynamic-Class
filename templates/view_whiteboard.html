@@ -1,0 +1,1855 @@
+{% extends "base.html" %}
+
+{% block title %}{{ whiteboard.name }} - Dlass{% endblock %}
+
+{% block content %}
+<div class="view-whiteboard-container">
+    <div class="mdc-layout-grid">
+        <div class="mdc-layout-grid__inner">
+            <div class="mdc-layout-grid__cell mdc-layout-grid__cell--span-12">
+                <div class="whiteboard-header">
+                    <h1 class="whiteboard-title">{{ whiteboard.name }}</h1>
+                    <div class="whiteboard-actions">
+                        <button class="action-btn" onclick="copyWhiteboardUrl()" title="复制白板连接">
+                            <i class="material-icons">link</i>
+                            <span>复制链接</span>
+                        </button>
+                        <button class="action-btn" onclick="refreshWhiteboardStatus()" title="刷新状态">
+                            <i class="material-icons">refresh</i>
+                            <span>刷新</span>
+                        </button>
+                        {% if is_class_teacher %}
+                        <a href="{{ url_for('settings.class_settings', class_id=whiteboard.class_id) }}" class="action-btn">
+                            <i class="material-icons">settings</i>
+                            <span>班级设置</span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- 白板信息卡片 -->
+                <div class="info-card">
+                    <div class="card-content">
+                        <div class="info-grid">
+                            <div class="info-section">
+                                <h3>白板信息</h3>
+                                <div class="info-item">
+                                    <span class="info-label">白板ID:</span>
+                                    <span class="info-value">{{ whiteboard.board_id }}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">所属班级:</span>
+                                    <span class="info-value">{{ whiteboard.class_obj.name }}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">创建时间:</span>
+                                    <span class="info-value">{{ whiteboard.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">状态:</span>
+                                    <span id="whiteboard-status" class="status-indicator">
+                                        {% if whiteboard.is_online %}
+                                        <span class="status-online">在线</span>
+                                        {% else %}
+                                        <span class="status-offline">离线</span>
+                                        {% endif %}
+                                    </span>
+                                    <span id="last-heartbeat" class="heartbeat-time">
+                                        {% if whiteboard.last_heartbeat %}
+                                        (最后心跳: {{ whiteboard.last_heartbeat.strftime('%Y-%m-%d %H:%M') }})
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="info-section">
+                                <h3>连接信息</h3>
+                                <div class="info-item">
+                                    <span class="info-label">连接URL:</span>
+                                    <span class="info-value url-text">{{ whiteboard_url }}</span>
+                                </div>
+                                <div class="qrcode-container" id="qrcode"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 选项卡导航 -->
+                <div class="tab-navigation">
+                    <div class="tab-scroller">
+                        <div class="tab-list">
+                            <button class="tab-btn active" data-tab="tasks">
+                                <span class="tab-icon">📋</span>
+                                <span class="tab-label">任务</span>
+                            </button>
+                            {% if is_class_teacher %}
+                            <button class="tab-btn" data-tab="announcements">
+                                <span class="tab-icon">📢</span>
+                                <span class="tab-label">公告</span>
+                            </button>
+                            {% endif %}
+                            <button class="tab-btn" data-tab="assignments">
+                                <span class="tab-icon">📚</span>
+                                <span class="tab-label">作业</span>
+                            </button>
+                            <button class="tab-btn" data-tab="history">
+                                <span class="tab-icon">📊</span>
+                                <span class="tab-label">历史记录</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 任务选项卡 -->
+                <div id="tasks-tab" class="tab-content active">
+                    <div class="content-card">
+                        <div class="card-content">
+                            <h3>创建新任务</h3>
+                            <form id="create-task-form" class="task-form">
+                                <div class="form-group">
+                                    <label for="task-title">任务标题</label>
+                                    <input type="text" id="task-title" class="form-input" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="task-description">任务描述</label>
+                                    <textarea id="task-description" class="form-textarea" rows="3"></textarea>
+                                </div>
+                                
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="task-priority">优先级</label>
+                                        <select id="task-priority" class="form-select">
+                                            <option value="1">低</option>
+                                            <option value="2">中</option>
+                                            <option value="3">高</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="task-subject">关联学科（可选）</label>
+                                        <select id="task-subject" class="form-select">
+                                            <option value="">无关联学科</option>
+                                            {% if is_class_teacher %}
+                                                <!-- 班主任可以看到所有学科 -->
+                                                {% for subject in class_subjects_list %}
+                                                    <option value="{{ subject }}">{{ subject }}</option>
+                                                {% endfor %}
+                                            {% elif is_teaching_teacher %}
+                                                <!-- 授课老师只能看到被分配的学科 -->
+                                                {% for subject in assigned_subjects %}
+                                                    <option value="{{ subject }}">{{ subject }}</option>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="task-action">执行操作</label>
+                                    <select id="task-action" class="form-select">
+                                        <option value="0">无操作</option>
+                                        <option value="1">显示通知</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="task-due-date">截止时间</label>
+                                    <input type="datetime-local" id="task-due-date" class="form-input">
+                                </div>
+                                
+                                <button type="submit" class="primary-btn" id="create-task-btn">
+                                    <span>创建任务</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="content-card">
+                        <div class="card-content">
+                            <h3>任务列表</h3>
+                            <div class="filter-controls">
+                                <button class="filter-btn active" data-filter="all">
+                                    <span>全部</span>
+                                </button>
+                                <button class="filter-btn" data-filter="pending">
+                                    <span>待处理</span>
+                                </button>
+                                <button class="filter-btn" data-filter="completed">
+                                    <span>已完成</span>
+                                </button>
+                            </div>
+                            <div id="tasks-list" class="items-list">
+                                {% for task in tasks %}
+                                <div class="list-item task-item" data-status="{% if task.is_completed %}completed{% elif task.is_acknowledged %}acknowledged{% else %}pending{% endif %}" data-id="{{ task.id }}">
+                                    <div class="item-content">
+                                        <div class="item-main">
+                                            <div class="item-title">
+                                                {{ task.title }}
+                                                <span class="priority-badge priority-{{ task.priority }}">
+                                                    {{ ['', '低', '中', '高'][task.priority] }}优先级
+                                                </span>
+                                                {% if task.subject %}
+                                                <span class="subject-badge">{{ task.subject }}</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="item-description">{{ task.description }}</div>
+                                            <div class="item-meta">
+                                                <span>发布者: {{ task.teacher.username }}</span>
+                                                <span>| 创建时间: {{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                                                {% if task.due_date %}
+                                                <span>| 截止时间: {{ task.due_date.strftime('%Y-%m-%d %H:%M') }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="item-actions">
+                                            <span class="status-tag {{ 'acknowledged' if task.is_acknowledged else 'not-acknowledged' }}">
+                                                {{ '已确认' if task.is_acknowledged else '未确认' }}
+                                            </span>
+                                            <span class="status-tag {{ 'completed' if task.is_completed else 'not-completed' }}">
+                                                {{ '已完成' if task.is_completed else '未完成' }}
+                                            </span>
+                                            {% if is_class_teacher or task.teacher_id == session.user_id %}
+                                            <button class="icon-btn delete-btn" onclick="deleteTask({{ task.id }})" title="删除任务">
+                                                <i class="material-icons">delete</i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="empty-state">
+                                    <p>暂无任务</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 公告选项卡（仅班主任可见） -->
+                {% if is_class_teacher %}
+                <div id="announcements-tab" class="tab-content">
+                    <div class="content-card">
+                        <div class="card-content">
+                            <h3>发布公告</h3>
+                            <form id="create-announcement-form" class="announcement-form">
+                                <div class="form-group">
+                                    <label for="announcement-title">公告标题</label>
+                                    <input type="text" id="announcement-title" class="form-input" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="announcement-content">公告内容</label>
+                                    <textarea id="announcement-content" class="form-textarea" rows="5" required></textarea>
+                                </div>
+                                
+                                <div class="form-group checkbox-group">
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" id="announcement-long-term" class="checkbox-input">
+                                        <span class="checkbox-custom"></span>
+                                        长期公告
+                                    </label>
+                                </div>
+                                
+                                <button type="submit" class="primary-btn" id="create-announcement-btn">
+                                    <span>发布公告</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="content-card">
+                        <div class="card-content">
+                            <h3>公告列表</h3>
+                            <div class="filter-controls">
+                                <button class="filter-btn active" data-filter="all">
+                                    <span>全部</span>
+                                </button>
+                                <button class="filter-btn" data-filter="long-term">
+                                    <span>长期公告</span>
+                                </button>
+                                <button class="filter-btn" data-filter="regular">
+                                    <span>普通公告</span>
+                                </button>
+                            </div>
+                            <div id="announcements-list" class="items-list">
+                                {% for announcement in announcements %}
+                                <div class="list-item announcement-item" data-type="{% if announcement.is_long_term %}long-term{% else %}regular{% endif %}" data-id="{{ announcement.id }}">
+                                    <div class="item-content">
+                                        <div class="item-main">
+                                            <div class="item-title">
+                                                {{ announcement.title }}
+                                                {% if announcement.is_long_term %}
+                                                <span class="type-badge">长期</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="item-description">{{ announcement.content }}</div>
+                                            <div class="item-meta">
+                                                <span>发布者: {{ announcement.teacher.username }}</span>
+                                                <span>| 发布时间: {{ announcement.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="item-actions">
+                                            <button class="icon-btn delete-btn" onclick="deleteAnnouncement({{ announcement.id }})" title="删除公告">
+                                                <i class="material-icons">delete</i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="empty-state">
+                                    <p>暂无公告</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- 作业选项卡 -->
+                <div id="assignments-tab" class="tab-content">
+                    <div class="content-card">
+                        <div class="card-content">
+                            <h3>发布作业</h3>
+                            <form id="create-assignment-form" class="assignment-form">
+                                <input type="hidden" id="assignment-id">
+                                
+                                <div class="form-group">
+                                    <label for="assignment-subject">科目</label>
+                                    <select id="assignment-subject" class="form-select" required>
+                                        <option value="">选择科目</option>
+                                        {% if is_class_teacher %}
+                                            <!-- 班主任可以看到所有学科 -->
+                                            {% for subject in class_subjects_list %}
+                                                <option value="{{ subject }}">{{ subject }}</option>
+                                            {% endfor %}
+                                        {% elif is_teaching_teacher %}
+                                            <!-- 授课老师只能看到被分配的学科 -->
+                                            {% for subject in assigned_subjects %}
+                                                <option value="{{ subject }}">{{ subject }}</option>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </select>
+                                    <div class="form-hint">
+                                        {% if is_class_teacher %}
+                                        您可以选择所有班级学科
+                                        {% elif is_teaching_teacher %}
+                                        您只能发布被分配学科的作业
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group assignment-field" data-field="title">
+                                    <label for="assignment-title">作业标题</label>
+                                    <input type="text" id="assignment-title" class="form-input" required disabled>
+                                </div>
+                                
+                                <div class="form-group assignment-field" data-field="description">
+                                    <label for="assignment-description">作业描述</label>
+                                    <textarea id="assignment-description" class="form-textarea" rows="3" required disabled></textarea>
+                                </div>
+                                
+                                <div class="form-group assignment-field" data-field="due-date">
+                                    <label for="assignment-due-date">截止时间</label>
+                                    <input type="datetime-local" id="assignment-due-date" class="form-input" required disabled>
+                                </div>
+                                
+                                <button type="submit" class="primary-btn" id="assignment-submit-btn" disabled>
+                                    <span>发布作业</span>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <div class="content-card">
+                        <div class="card-content">
+                            <h3>作业列表</h3>
+                            <div class="filter-controls">
+                                <button class="filter-btn active" data-filter="all">
+                                    <span>全部</span>
+                                </button>
+                                <button class="filter-btn" data-filter="active">
+                                    <span>进行中</span>
+                                </button>
+                                <button class="filter-btn" data-filter="upcoming">
+                                    <span>即将开始</span>
+                                </button>
+                                <button class="filter-btn" data-filter="completed">
+                                    <span>已结束</span>
+                                </button>
+                            </div>
+                            <div id="assignments-list" class="items-list">
+                                {% for assignment in assignments %}
+                                <div class="list-item assignment-item" data-status="{% if assignment.due_date < now %}completed{% else %}active{% endif %}" data-id="{{ assignment.id }}">
+                                    <div class="item-content">
+                                        <div class="item-main">
+                                            <div class="item-title">
+                                                {{ assignment.title }}
+                                                <span class="subject-badge">{{ assignment.subject }}</span>
+                                            </div>
+                                            <div class="item-description">{{ assignment.description }}</div>
+                                            <div class="item-meta">
+                                                <span>发布者: {{ assignment.teacher.username }}</span>
+                                                <span>| 截止时间: {{ assignment.due_date.strftime('%Y-%m-%d %H:%M') }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="item-actions">
+                                            <span class="status-tag {% if assignment.due_date < now %}completed{% else %}active{% endif %}">
+                                                {% if assignment.due_date < now %}已结束{% else %}进行中{% endif %}
+                                            </span>
+                                            {% if is_class_teacher or assignment.teacher_id == session.user_id %}
+                                            <button class="icon-btn delete-btn" onclick="deleteAssignment({{ assignment.id }})" title="删除作业">
+                                                <i class="material-icons">delete</i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="empty-state">
+                                    <p>暂无作业</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 历史记录选项卡 -->
+                <div id="history-tab" class="tab-content">
+                    <div class="content-card">
+                        <div class="card-content">
+                            <h3>历史记录</h3>
+                            <div class="filter-controls">
+                                <div class="form-group">
+                                    <label for="history-date">选择日期</label>
+                                    <input type="date" id="history-date" class="form-input" value="{{ now.strftime('%Y-%m-%d') }}">
+                                </div>
+                                <button class="primary-btn" onclick="loadHistory()">
+                                    <span>查询</span>
+                                </button>
+                            </div>
+                            <div id="history-list" class="items-list">
+                                <div class="empty-state">
+                                    <p>请选择日期查询历史记录</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+<script>
+// 初始化Socket.IO连接
+const socket = io({
+    transports: ['websocket', 'polling']
+});
+
+// 连接建立时
+socket.on('connect', () => {
+    console.log('已连接到服务器');
+    socket.emit('join_teacher_room');
+});
+
+// 连接断开时
+socket.on('disconnect', () => {
+    console.log('与服务器断开连接');
+    updateWhiteboardStatus(false, '连接断开');
+});
+
+// 接收白板状态更新
+socket.on('whiteboard_status_update', (data) => {
+    if (data.whiteboard_id === {{ whiteboard.id }}) {
+        console.log('收到当前白板状态更新:', data);
+        updateWhiteboardStatus(data.is_online, data.last_heartbeat);
+    }
+});
+
+// 更新白板状态显示
+function updateWhiteboardStatus(isOnline, lastHeartbeat) {
+    const statusElement = document.getElementById('whiteboard-status');
+    const heartbeatElement = document.getElementById('last-heartbeat');
+    
+    if (isOnline) {
+        statusElement.innerHTML = '<span class="status-online">在线</span>';
+    } else {
+        statusElement.innerHTML = '<span class="status-offline">离线</span>';
+    }
+    
+    if (lastHeartbeat) {
+        heartbeatElement.textContent = `(最后心跳: ${lastHeartbeat})`;
+    }
+    
+    // 添加视觉反馈
+    const infoCard = document.querySelector('.info-card');
+    if (infoCard) {
+        infoCard.style.transition = 'all 0.3s ease';
+        if (isOnline) {
+            infoCard.style.boxShadow = '0 4px 12px rgba(39, 174, 96, 0.3)';
+        } else {
+            infoCard.style.boxShadow = '0 4px 12px rgba(231, 76, 60, 0.3)';
+        }
+        
+        // 移除视觉反馈
+        setTimeout(() => {
+            infoCard.style.boxShadow = '';
+        }, 2000);
+    }
+}
+
+// 复制白板连接URL
+function copyWhiteboardUrl() {
+    navigator.clipboard.writeText("{{ whiteboard_url }}")
+        .then(() => {
+            showMessage('白板连接已复制到剪贴板', 'success');
+        })
+        .catch(err => {
+            console.error('复制失败:', err);
+            showMessage('复制失败: ' + err.message, 'error');
+        });
+}
+
+// 刷新白板状态
+function refreshWhiteboardStatus() {
+    fetch('/whiteboards/{{ whiteboard.id }}/status')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateWhiteboardStatus(data.is_online, data.last_heartbeat);
+                showMessage('状态已刷新', 'success');
+            } else {
+                showMessage('获取状态失败: ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('刷新状态失败', 'error');
+        });
+}
+
+// 显示消息提示
+function showMessage(message, type = 'success') {
+    // 移除现有消息
+    const existingMessages = document.querySelectorAll('.message');
+    existingMessages.forEach(msg => msg.remove());
+    
+    const messageEl = document.createElement('div');
+    messageEl.className = `message ${type}`;
+    messageEl.textContent = message;
+    document.body.appendChild(messageEl);
+    
+    setTimeout(() => {
+        if (document.body.contains(messageEl)) {
+            messageEl.remove();
+        }
+    }, 3000);
+}
+
+// 选项卡切换
+document.querySelectorAll('.tab-btn').forEach(tab => {
+    tab.addEventListener('click', () => {
+        const tabName = tab.getAttribute('data-tab');
+        
+        // 更新选项卡状态
+        document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        // 更新内容显示
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        document.getElementById(`${tabName}-tab`).classList.add('active');
+    });
+});
+
+// 过滤器按钮点击事件
+document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const filter = btn.getAttribute('data-filter');
+        
+        // 更新按钮状态
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        
+        // 过滤内容
+        const container = btn.closest('.card-content').querySelector('.items-list');
+        const items = container.querySelectorAll('.list-item');
+        
+        items.forEach(item => {
+            if (filter === 'all') {
+                item.style.display = 'flex';
+            } else {
+                const itemType = item.getAttribute('data-status') || item.getAttribute('data-type');
+                item.style.display = itemType === filter ? 'flex' : 'none';
+            }
+        });
+    });
+});
+
+// 启用或禁用作业表单字段
+function toggleAssignmentFields(enabled) {
+    const fields = document.querySelectorAll('.assignment-field');
+    const submitBtn = document.getElementById('assignment-submit-btn');
+    
+    fields.forEach(field => {
+        const input = field.querySelector('input, textarea');
+        if (input) {
+            input.disabled = !enabled;
+            field.classList.toggle('disabled', !enabled);
+        }
+    });
+    
+    submitBtn.disabled = !enabled;
+}
+
+// 检查现有作业
+async function checkExistingAssignment(subject) {
+    if (!subject) {
+        resetAssignmentForm();
+        toggleAssignmentFields(false);
+        return;
+    }
+    
+    // 启用表单字段
+    toggleAssignmentFields(true);
+    
+    try {
+        const response = await fetch(`/whiteboards/{{ whiteboard.id }}/check_assignment?subject=${encodeURIComponent(subject)}`);
+        const result = await response.json();
+        
+        if (result.assignment) {
+            document.getElementById('assignment-id').value = result.assignment.id;
+            document.getElementById('assignment-title').value = result.assignment.title;
+            document.getElementById('assignment-description').value = result.assignment.description;
+            
+            // 正确格式化日期时间
+            const dueDate = new Date(result.assignment.due_date);
+            const formattedDate = dueDate.toISOString().slice(0, 16);
+            document.getElementById('assignment-due-date').value = formattedDate;
+            
+            document.getElementById('assignment-submit-btn').querySelector('span').textContent = '更新作业';
+            
+            // 显示提示信息
+            showMessage(`发现今天已发布的${subject}作业，可以更新`, 'info');
+        } else {
+            resetAssignmentForm();
+            document.getElementById('assignment-submit-btn').querySelector('span').textContent = '发布作业';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('检查作业失败', 'error');
+        resetAssignmentForm();
+    }
+}
+
+// 重置作业表单
+function resetAssignmentForm() {
+    document.getElementById('assignment-id').value = '';
+    document.getElementById('assignment-title').value = '';
+    document.getElementById('assignment-description').value = '';
+    
+    // 设置默认截止时间为明天同一时间
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    document.getElementById('assignment-due-date').value = tomorrow.toISOString().slice(0, 16);
+    
+    document.getElementById('assignment-submit-btn').querySelector('span').textContent = '发布作业';
+}
+
+// 设置按钮加载状态
+function setButtonLoading(button, isLoading) {
+    const span = button.querySelector('span');
+    if (isLoading) {
+        button.disabled = true;
+        span.textContent = '处理中...';
+        button.classList.add('loading');
+    } else {
+        button.disabled = false;
+        // 根据按钮类型恢复文本
+        if (button.id === 'assignment-submit-btn') {
+            const subject = document.getElementById('assignment-subject').value;
+            span.textContent = document.getElementById('assignment-id').value ? '更新作业' : '发布作业';
+        } else if (button.id === 'create-task-btn') {
+            span.textContent = '创建任务';
+        } else if (button.id === 'create-announcement-btn') {
+            span.textContent = '发布公告';
+        } else if (button.id === 'save-subjects-btn') {
+            span.textContent = '保存科目';
+        }
+        button.classList.remove('loading');
+    }
+}
+
+// 格式化日期时间显示
+function formatDateTimeDisplay(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// 加载任务列表
+async function loadTasksList() {
+    try {
+        const response = await fetch('/whiteboards/{{ whiteboard.id }}/tasks');
+        const result = await response.json();
+        
+        if (result.success) {
+            const tasksList = document.getElementById('tasks-list');
+            tasksList.innerHTML = '';
+            
+            if (result.tasks.length === 0) {
+                tasksList.innerHTML = '<div class="empty-state"><p>暂无任务</p></div>';
+                return;
+            }
+            
+            result.tasks.forEach(task => {
+                const taskItem = document.createElement('div');
+                taskItem.className = 'list-item task-item';
+                taskItem.setAttribute('data-status', task.is_completed ? 'completed' : (task.is_acknowledged ? 'acknowledged' : 'pending'));
+                taskItem.setAttribute('data-id', task.id);
+                
+                const priorityText = ['', '低', '中', '高'][task.priority] || '未知';
+                const acknowledgedText = task.is_acknowledged ? '已确认' : '未确认';
+                const completedText = task.is_completed ? '已完成' : '未完成';
+                const acknowledgedClass = task.is_acknowledged ? 'acknowledged' : 'not-acknowledged';
+                const completedClass = task.is_completed ? 'completed' : 'not-completed';
+                const deleteButton = task.can_delete ? 
+                    `<button class="icon-btn delete-btn" onclick="deleteTask(${task.id})" title="删除任务">
+                        <i class="material-icons">delete</i>
+                    </button>` : '';
+
+                taskItem.innerHTML = `
+                    <div class="item-content">
+                        <div class="item-main">
+                            <div class="item-title">
+                                ${task.title}
+                                <span class="priority-badge priority-${task.priority}">
+                                    ${priorityText}优先级
+                                </span>
+                                ${task.subject ? `<span class="subject-badge">${task.subject}</span>` : ''}
+                            </div>
+                            <div class="item-description">${task.description || ''}</div>
+                            <div class="item-meta">
+                                <span>发布者: ${task.teacher_name}</span>
+                                <span>| 创建时间: ${formatDateTimeDisplay(task.created_at)}</span>
+                                ${task.due_date ? `<span>| 截止时间: ${formatDateTimeDisplay(task.due_date)}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <span class="status-tag ${acknowledgedClass}">
+                                ${acknowledgedText}
+                            </span>
+                            <span class="status-tag ${completedClass}">
+                                ${completedText}
+                            </span>
+                            ${deleteButton}
+                        </div>
+                    </div>
+                `;
+                tasksList.appendChild(taskItem);
+            });
+            
+            // 重新应用过滤器
+            const activeFilter = document.querySelector('#tasks-tab .filter-btn.active');
+            if (activeFilter) {
+                const filter = activeFilter.getAttribute('data-filter');
+                applyTaskFilter(filter);
+            }
+        } else {
+            throw new Error(result.error || '加载任务列表失败');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('加载任务列表失败', 'error');
+    }
+}
+
+// 应用任务过滤器
+function applyTaskFilter(filter) {
+    const tasksList = document.getElementById('tasks-list');
+    const items = tasksList.querySelectorAll('.task-item');
+    
+    items.forEach(item => {
+        if (filter === 'all') {
+            item.style.display = 'flex';
+        } else {
+            const itemStatus = item.getAttribute('data-status');
+            item.style.display = itemStatus === filter ? 'flex' : 'none';
+        }
+    });
+}
+
+// 加载公告列表
+async function loadAnnouncementsList() {
+    try {
+        const response = await fetch('/whiteboards/{{ whiteboard.id }}/announcements');
+        const result = await response.json();
+        
+        if (result.success) {
+            const announcementsList = document.getElementById('announcements-list');
+            announcementsList.innerHTML = '';
+            
+            if (result.announcements.length === 0) {
+                announcementsList.innerHTML = '<div class="empty-state"><p>暂无公告</p></div>';
+                return;
+            }
+            
+            result.announcements.forEach(announcement => {
+                const announcementItem = document.createElement('div');
+                announcementItem.className = 'list-item announcement-item';
+                announcementItem.setAttribute('data-type', announcement.is_long_term ? 'long-term' : 'regular');
+                announcementItem.setAttribute('data-id', announcement.id);
+                
+                announcementItem.innerHTML = `
+                    <div class="item-content">
+                        <div class="item-main">
+                            <div class="item-title">
+                                ${announcement.title}
+                                ${announcement.is_long_term ? '<span class="type-badge">长期</span>' : ''}
+                            </div>
+                            <div class="item-description">${announcement.content}</div>
+                            <div class="item-meta">
+                                <span>发布者: ${announcement.teacher_name}</span>
+                                <span>| 发布时间: ${formatDateTimeDisplay(announcement.created_at)}</span>
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <button class="icon-btn delete-btn" onclick="deleteAnnouncement(${announcement.id})" title="删除公告">
+                                <i class="material-icons">delete</i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                announcementsList.appendChild(announcementItem);
+            });
+            
+            // 重新应用过滤器
+            const activeFilter = document.querySelector('#announcements-tab .filter-btn.active');
+            if (activeFilter) {
+                const filter = activeFilter.getAttribute('data-filter');
+                applyAnnouncementFilter(filter);
+            }
+        } else {
+            throw new Error(result.error || '加载公告列表失败');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('加载公告列表失败', 'error');
+    }
+}
+
+// 应用公告过滤器
+function applyAnnouncementFilter(filter) {
+    const announcementsList = document.getElementById('announcements-list');
+    const items = announcementsList.querySelectorAll('.announcement-item');
+    
+    items.forEach(item => {
+        if (filter === 'all') {
+            item.style.display = 'flex';
+        } else {
+            const itemType = item.getAttribute('data-type');
+            item.style.display = itemType === filter ? 'flex' : 'none';
+        }
+    });
+}
+
+// 加载作业列表
+async function loadAssignmentsList() {
+    try {
+        const response = await fetch('/whiteboards/{{ whiteboard.id }}/assignments');
+        const result = await response.json();
+        
+        if (result.success) {
+            const assignmentsList = document.getElementById('assignments-list');
+            assignmentsList.innerHTML = '';
+            
+            if (result.assignments.length === 0) {
+                assignmentsList.innerHTML = '<div class="empty-state"><p>暂无作业</p></div>';
+                return;
+            }
+            
+            result.assignments.forEach(assignment => {
+                const assignmentItem = document.createElement('div');
+                assignmentItem.className = 'list-item assignment-item';
+                
+                const dueDate = new Date(assignment.due_date);
+                const now = new Date();
+                const status = dueDate < now ? 'completed' : 'active';
+                const statusText = status === 'completed' ? '已结束' : '进行中';
+                
+                assignmentItem.setAttribute('data-status', status);
+                assignmentItem.setAttribute('data-id', assignment.id);
+                const deleteButton = assignment.can_delete ? 
+                    `<button class="icon-btn delete-btn" onclick="deleteAssignment(${assignment.id})" title="删除作业">
+                        <i class="material-icons">delete</i>
+                    </button>` : '';
+
+                assignmentItem.innerHTML = `
+                    <div class="item-content">
+                        <div class="item-main">
+                            <div class="item-title">
+                                ${assignment.title}
+                                <span class="subject-badge">${assignment.subject}</span>
+                            </div>
+                            <div class="item-description">${assignment.description}</div>
+                            <div class="item-meta">
+                                <span>发布者: ${assignment.teacher_name}</span>
+                                <span>| 截止时间: ${formatDateTimeDisplay(assignment.due_date)}</span>
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <span class="status-tag ${status}">
+                                ${statusText}
+                            </span>
+                            ${deleteButton}
+                        </div>
+                    </div>
+                `;
+                assignmentsList.appendChild(assignmentItem);
+            });
+            
+            // 重新应用过滤器
+            const activeFilter = document.querySelector('#assignments-tab .filter-btn.active');
+            if (activeFilter) {
+                const filter = activeFilter.getAttribute('data-filter');
+                applyAssignmentFilter(filter);
+            }
+        } else {
+            throw new Error(result.error || '加载作业列表失败');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage('加载作业列表失败', 'error');
+    }
+}
+
+// 应用作业过滤器
+function applyAssignmentFilter(filter) {
+    const assignmentsList = document.getElementById('assignments-list');
+    const items = assignmentsList.querySelectorAll('.assignment-item');
+    
+    items.forEach(item => {
+        if (filter === 'all') {
+            item.style.display = 'flex';
+        } else {
+            const itemStatus = item.getAttribute('data-status');
+            item.style.display = itemStatus === filter ? 'flex' : 'none';
+        }
+    });
+}
+
+// 表单提交处理
+document.getElementById('create-task-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const createTaskBtn = document.getElementById('create-task-btn');
+    setButtonLoading(createTaskBtn, true);
+    
+    const dueDate = document.getElementById('task-due-date').value;
+    const subject = document.getElementById('task-subject').value;
+    const formData = {
+        title: document.getElementById('task-title').value,
+        description: document.getElementById('task-description').value,
+        priority: parseInt(document.getElementById('task-priority').value),
+        action_id: parseInt(document.getElementById('task-action').value),
+        subject: subject,
+        due_date: dueDate ? new Date(dueDate).toISOString() : null
+    };
+    
+    try {
+        const response = await fetch('/whiteboards/{{ whiteboard.id }}/create_task', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('create-task-form').reset();
+            showMessage('任务创建成功', 'success');
+            // 重新加载任务列表
+            await loadTasksList();
+        } else {
+            throw new Error(result.error || '创建任务失败');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage(error.message, 'error');
+    } finally {
+        setButtonLoading(createTaskBtn, false);
+    }
+});
+
+{% if is_class_teacher %}
+document.getElementById('create-announcement-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const createAnnouncementBtn = document.getElementById('create-announcement-btn');
+    setButtonLoading(createAnnouncementBtn, true);
+    
+    const formData = {
+        title: document.getElementById('announcement-title').value,
+        content: document.getElementById('announcement-content').value,
+        is_long_term: document.getElementById('announcement-long-term').checked
+    };
+    
+    try {
+        const response = await fetch('/whiteboards/{{ whiteboard.id }}/create_announcement', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('create-announcement-form').reset();
+            showMessage('公告发布成功', 'success');
+            // 重新加载公告列表
+            await loadAnnouncementsList();
+        } else {
+            throw new Error(result.error || '发布公告失败');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage(error.message, 'error');
+    } finally {
+        setButtonLoading(createAnnouncementBtn, false);
+    }
+});
+{% endif %}
+
+document.getElementById('create-assignment-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const assignmentSubmitBtn = document.getElementById('assignment-submit-btn');
+    setButtonLoading(assignmentSubmitBtn, true);
+    
+    const formData = {
+        id: document.getElementById('assignment-id').value,
+        title: document.getElementById('assignment-title').value,
+        description: document.getElementById('assignment-description').value,
+        subject: document.getElementById('assignment-subject').value,
+        due_date: new Date(document.getElementById('assignment-due-date').value).toISOString()
+    };
+    
+    try {
+        const response = await fetch('/whiteboards/{{ whiteboard.id }}/create_assignment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            resetAssignmentForm();
+            document.getElementById('assignment-subject').value = '';
+            toggleAssignmentFields(false);
+            showMessage(result.is_update ? '作业更新成功' : '作业发布成功', 'success');
+            // 重新加载作业列表
+            await loadAssignmentsList();
+        } else {
+            throw new Error(result.error || '操作失败');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage(error.message, 'error');
+    } finally {
+        setButtonLoading(assignmentSubmitBtn, false);
+    }
+});
+
+// 科目保存表单处理
+/*
+document.querySelector('.settings-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const saveSubjectsBtn = document.getElementById('save-subjects-btn');
+    setButtonLoading(saveSubjectsBtn, true);
+    
+    const formData = new FormData(e.target);
+    
+    try {
+        const response = await fetch('{{ url_for('whiteboards.view_whiteboard', whiteboard_id=whiteboard.id) }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            showMessage('科目保存成功', 'success');
+            // 重新加载科目选择框
+            const subjects = formData.get('subjects');
+            if (subjects) {
+                const subjectSelect = document.getElementById('assignment-subject');
+                subjectSelect.innerHTML = '<option value="">选择科目</option>';
+                subjects.split(',').forEach(sub => {
+                    const trimmedSub = sub.trim();
+                    if (trimmedSub) {
+                        const option = document.createElement('option');
+                        option.value = trimmedSub;
+                        option.textContent = trimmedSub;
+                        subjectSelect.appendChild(option);
+                    }
+                });
+                
+                // 同时更新任务科目的选择框
+                const taskSubjectSelect = document.getElementById('task-subject');
+                taskSubjectSelect.innerHTML = '<option value="">无关联学科</option>';
+                subjects.split(',').forEach(sub => {
+                    const trimmedSub = sub.trim();
+                    if (trimmedSub) {
+                        const option = document.createElement('option');
+                        option.value = trimmedSub;
+                        option.textContent = trimmedSub;
+                        taskSubjectSelect.appendChild(option);
+                    }
+                });
+            }
+        } else {
+            throw new Error('保存科目失败');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage(error.message, 'error');
+    } finally {
+        setButtonLoading(saveSubjectsBtn, false);
+    }
+});
+*/
+
+// 删除功能
+async function deleteTask(taskId) {
+    if (!confirm('确定要删除这个任务吗？')) return;
+    
+    try {
+        const response = await fetch(`/tasks/${taskId}/delete`, { method: 'POST' });
+        const result = await response.json();
+        
+        if (result.success) {
+            showMessage('任务已删除', 'success');
+            // 重新加载任务列表
+            await loadTasksList();
+        } else {
+            throw new Error(result.error || '删除任务失败');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage(error.message, 'error');
+    }
+}
+
+async function deleteAnnouncement(announcementId) {
+    if (!confirm('确定要删除这个公告吗？')) return;
+    
+    try {
+        const response = await fetch(`/announcements/${announcementId}/delete`, { method: 'POST' });
+        const result = await response.json();
+        
+        if (result.success) {
+            showMessage('公告已删除', 'success');
+            // 重新加载公告列表
+            await loadAnnouncementsList();
+        } else {
+            throw new Error(result.error || '删除公告失败');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage(error.message, 'error');
+    }
+}
+
+async function deleteAssignment(assignmentId) {
+    if (!confirm('确定要删除这个作业吗？')) return;
+    
+    try {
+        const response = await fetch(`/assignments/${assignmentId}/delete`, { method: 'POST' });
+        const result = await response.json();
+        
+        if (result.success) {
+            showMessage('作业已删除', 'success');
+            // 重新加载作业列表
+            await loadAssignmentsList();
+        } else {
+            throw new Error(result.error || '删除作业失败');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage(error.message, 'error');
+    }
+}
+
+// 加载历史记录
+async function loadHistory() {
+    const date = document.getElementById('history-date').value;
+    
+    if (!date) {
+        showMessage('请选择日期', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/whiteboards/{{ whiteboard.id }}/history?date=${date}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = '';
+            
+            if (result.data.length === 0) {
+                historyList.innerHTML = '<div class="empty-state"><p>该日期无历史记录</p></div>';
+                return;
+            }
+            
+            result.data.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'list-item history-item';
+                historyItem.innerHTML = `
+                    <div class="item-content">
+                        <div class="item-main">
+                            <div class="item-title">${item.type}: ${item.title}</div>
+                            <div class="item-description">${item.description || ''}</div>
+                            <div class="item-meta">
+                                <span>时间: ${item.created_at}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                historyList.appendChild(historyItem);
+            });
+        } else {
+            throw new Error(result.error || '加载历史记录失败');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showMessage(error.message, 'error');
+    }
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    // 设置默认日期时间
+    const now = new Date();
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    document.getElementById('assignment-due-date').value = tomorrow.toISOString().slice(0, 16);
+    
+    const dayAfterTomorrow = new Date(now);
+    dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+    document.getElementById('task-due-date').value = dayAfterTomorrow.toISOString().slice(0, 16);
+    
+    // 初始化作业表单状态
+    toggleAssignmentFields(false);
+    
+    // 为科目选择框添加事件监听
+    const subjectSelect = document.getElementById('assignment-subject');
+    if (subjectSelect) {
+        subjectSelect.addEventListener('change', function() {
+            checkExistingAssignment(this.value);
+        });
+    }
+    
+    // 为过滤器按钮添加点击事件
+    document.querySelectorAll('#tasks-tab .filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const filter = e.target.getAttribute('data-filter');
+            applyTaskFilter(filter);
+        });
+    });
+    
+    document.querySelectorAll('#announcements-tab .filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const filter = e.target.getAttribute('data-filter');
+            applyAnnouncementFilter(filter);
+        });
+    });
+    
+    document.querySelectorAll('#assignments-tab .filter-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const filter = e.target.getAttribute('data-filter');
+            applyAssignmentFilter(filter);
+        });
+    });
+});
+</script>
+
+<style>
+.primary-btn.loading {
+    background: #bdc3c7;
+    cursor: not-allowed;
+}
+
+.primary-btn.loading::after {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-left: 8px;
+    border: 2px solid transparent;
+    border-top: 2px solid #ffffff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.view-whiteboard-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* 标题区域 */
+.whiteboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding: 0 8px;
+}
+
+.whiteboard-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.whiteboard-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.action-btn:hover {
+    background: #2980b9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* 卡片样式 */
+.info-card, .settings-card, .content-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+    overflow: hidden;
+}
+
+.card-content {
+    padding: 24px;
+}
+
+/* 信息网格 */
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+}
+
+.info-section h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 16px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 8px;
+}
+
+.info-label {
+    font-weight: 500;
+    color: #7f8c8d;
+    min-width: 80px;
+}
+
+.info-value {
+    color: #2c3e50;
+}
+
+.url-text {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: #3498db;
+}
+
+/* 状态指示器 */
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-online {
+    color: #27ae60;
+    font-weight: 600;
+}
+
+.status-offline {
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+.heartbeat-time {
+    font-size: 12px;
+    color: #95a5a6;
+}
+
+/* 二维码容器 */
+.qrcode-container {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+}
+
+/* 设置表单 */
+.settings-form {
+    max-width: 500px;
+}
+
+/* 选项卡导航 */
+.tab-navigation {
+    margin: 32px 0 24px;
+}
+
+.tab-scroller {
+    overflow-x: auto;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.tab-list {
+    display: flex;
+    gap: 0;
+    min-width: max-content;
+}
+
+.tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: #7f8c8d;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.tab-btn:hover {
+    color: #3498db;
+    background: #f8f9fa;
+}
+
+.tab-btn.active {
+    color: #3498db;
+    border-bottom-color: #3498db;
+    background: #f8f9fa;
+}
+
+.tab-icon {
+    font-size: 16px;
+}
+
+.tab-label {
+    font-weight: 500;
+}
+
+/* 选项卡内容 */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* 表单样式 */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ecf0f1;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.form-input:disabled, .form-textarea:disabled {
+    background-color: #f8f9fa;
+    color: #95a5a6;
+    cursor: not-allowed;
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-hint {
+    font-size: 12px;
+    color: #7f8c8d;
+    margin-top: 4px;
+}
+
+/* 复选框 */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 8px;
+}
+
+.checkbox-input {
+    display: none;
+}
+
+.checkbox-custom {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #bdc3c7;
+    border-radius: 4px;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.checkbox-input:checked + .checkbox-custom {
+    background: #3498db;
+    border-color: #3498db;
+}
+
+.checkbox-input:checked + .checkbox-custom::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 12px;
+}
+
+/* 按钮样式 */
+.primary-btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.primary-btn:hover:not(:disabled) {
+    background: #2980b9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.primary-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* 过滤器控制 */
+.filter-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    border: 2px solid #ecf0f1;
+    background: white;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #7f8c8d;
+    transition: all 0.3s ease;
+}
+
+.filter-btn:hover {
+    border-color: #3498db;
+    color: #3498db;
+}
+
+.filter-btn.active {
+    background: #3498db;
+    border-color: #3498db;
+    color: white;
+}
+
+/* 列表样式 */
+.items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.list-item {
+    background: white;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    padding: 16px;
+    transition: all 0.3s ease;
+}
+
+.list-item:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-1px);
+}
+
+.item-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.item-main {
+    flex: 1;
+}
+
+.item-title {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.item-description {
+    color: #7f8c8d;
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+.item-meta {
+    font-size: 12px;
+    color: #95a5a6;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.item-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* 徽章样式 */
+.priority-badge, .type-badge, .subject-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.priority-1 { background: #d4efdf; color: #27ae60; }
+.priority-2 { background: #fdebd0; color: #f39c12; }
+.priority-3 { background: #fadbd8; color: #e74c3c; }
+
+.type-badge { background: #e8f6f3; color: #16a085; }
+.subject-badge { background: #e8f4fd; color: #2980b9; }
+
+/* 状态标签 */
+.status-tag {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.status-tag.acknowledged { background: #d4efdf; color: #27ae60; }
+.status-tag.not-acknowledged { background: #fadbd8; color: #e74c3c; }
+.status-tag.completed { background: #d4efdf; color: #27ae60; }
+.status-tag.not-completed { background: #fdebd0; color: #f39c12; }
+.status-tag.active { background: #d6eaf8; color: #3498db; }
+
+/* 图标按钮 */
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    color: #7f8c8d;
+    transition: all 0.3s ease;
+}
+
+.icon-btn:hover {
+    background: #f8f9fa;
+    color: #e74c3c;
+}
+
+.delete-btn:hover {
+    background: #fadbd8;
+}
+
+/* 空状态 */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #95a5a6;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* 消息提示 */
+.message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+}
+
+.message.success { background: #27ae60; }
+.message.error { background: #e74c3c; }
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* 禁用字段样式 */
+.assignment-field.disabled {
+    opacity: 0.6;
+}
+
+.assignment-field.disabled label {
+    color: #95a5a6;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .view-whiteboard-container {
+        padding: 12px;
+    }
+    
+    .whiteboard-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+    }
+    
+    .whiteboard-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .item-content {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .item-actions {
+        align-self: flex-end;
+    }
+    
+    .tab-list {
+        gap: 0;
+    }
+    
+    .tab-btn {
+        padding: 10px 16px;
+    }
+}
+</style>
+{% endblock %}

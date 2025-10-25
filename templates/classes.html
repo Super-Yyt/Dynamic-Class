@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}班级管理 - Dlass{% endblock %}
+
+{% block content %}
+<div class="classes-container">
+    <div class="classes-header">
+        <h1 class="classes-title">班级管理</h1>
+        {% if role == 'teacher' %}
+        <a href="{{ url_for('classes.create_class') }}" class="primary-btn">
+            <i class="material-icons btn-icon">add</i>
+            <span class="btn-label">创建新班级</span>
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- 我创建的班级 -->
+    {% if created_classes %}
+    <div class="classes-section">
+        <h2 class="section-title">我创建的班级</h2>
+        <div class="classes-list">
+            {% for class in created_classes %}
+            <div class="class-card">
+                <div class="class-card-content">
+                    <div class="class-info">
+                        <h3 class="class-name">{{ class.name }}</h3>
+                        <p class="class-meta">
+                            创建时间: {{ class.created_at.strftime('%Y-%m-%d') }} | 
+                            班级代码: {{ class.code }} |
+                            角色: 班主任
+                        </p>
+                        {% if class.description %}
+                        <p class="class-description">{{ class.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="class-actions">
+                        <a href="{{ url_for('classes.view_class', class_id=class.id) }}" class="outline-btn small-btn">
+                            <span>查看</span>
+                        </a>
+                        <a href="{{ url_for('settings.class_settings', class_id=class.id) }}" class="outline-btn small-btn">
+                            <span>设置</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 我加入的班级 -->
+    {% if joined_classes %}
+    <div class="classes-section">
+        <h2 class="section-title">我加入的班级</h2>
+        <div class="classes-list">
+            {% for class in joined_classes %}
+            <div class="class-card">
+                <div class="class-card-content">
+                    <div class="class-info">
+                        <h3 class="class-name">{{ class.name }}</h3>
+                        <p class="class-meta">
+                            班主任: {{ class.teacher.username }} |
+                            加入时间: {{ class.joined_at.strftime('%Y-%m-%d') }} |
+                            角色: 授课老师
+                        </p>
+                        {% if class.assigned_subjects %}
+                        <div class="assigned-subjects">
+                            <strong>分配学科:</strong>
+                            {% for subject in class.get_assigned_subjects_list() %}
+                            <span class="subject-tag">{{ subject }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% if class.description %}
+                        <p class="class-description">{{ class.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="class-actions">
+                        <a href="{{ url_for('classes.view_class', class_id=class.class_id) }}" class="outline-btn small-btn">
+                            <span>查看</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if not created_classes and not joined_classes %}
+    <div class="empty-state">
+        <div class="empty-content">
+            <i class="material-icons empty-icon">groups</i>
+            {% if role == 'teacher' %}
+            <h3 class="empty-title">您还没有班级</h3>
+            <p class="empty-description">创建您的第一个班级或等待其他班主任邀请</p>
+            <a href="{{ url_for('classes.create_class') }}" class="primary-btn">
+                <span class="btn-label">创建第一个班级</span>
+            </a>
+            {% else %}
+            <h3 class="empty-title">您还没有加入任何班级</h3>
+            <p class="empty-description">请联系教师获取班级代码</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.classes-section {
+    margin-bottom: 40px;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: #2c3e50;
+    border-bottom: 2px solid #ecf0f1;
+    padding-bottom: 8px;
+}
+
+.class-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.class-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+.class-card-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.class-info {
+    flex: 1;
+}
+
+.class-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #2c3e50;
+}
+
+.class-meta {
+    color: #7f8c8d;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.class-description {
+    color: #7f8c8d;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
+.assigned-subjects {
+    margin-top: 8px;
+}
+
+.subject-tag {
+    display: inline-block;
+    background: #e8f4fd;
+    color: #2980b9;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-right: 4px;
+    margin-top: 4px;
+}
+
+.class-actions {
+    display: flex;
+    gap: 8px;
+}
+
+@media (max-width: 768px) {
+    .class-card-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .class-actions {
+        align-self: flex-end;
+    }
+}
+</style>
+{% endblock %}

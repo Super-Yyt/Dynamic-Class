@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}设置 - Dlass{% endblock %}
+
+{% block content %}
+<div class="settings-container">
+    <div class="settings-header">
+        <h1 class="settings-title">个人设置</h1>
+    </div>
+    
+    <div class="settings-grid">
+        <div class="settings-card">
+            <div class="card-content">
+                <h2 class="card-title">基本信息</h2>
+                <div class="settings-list">
+                    <div class="setting-item">
+                        <span class="setting-label">用户名:</span>
+                        <span class="setting-value">{{ user.username }}</span>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">邮箱:</span>
+                        <span class="setting-value">{{ user.email or '未设置' }}</span>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">角色:</span>
+                        <span class="setting-value">{{ '教师' if user.role == 'teacher' else '学生' }}</span>
+                    </div>
+                    <div class="setting-item">
+                        <span class="setting-label">最后登录:</span>
+                        <span class="setting-value">
+                            {% if user.last_login %}
+                                {{ user.last_login.strftime('%Y-%m-%d %H:%M:%S') }}
+                            {% else %}
+                                首次登录
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if user.role == 'teacher' %}
+        <div class="settings-card">
+            <div class="card-content">
+                <h2 class="card-title">加入班级</h2>
+                <form method="POST" class="settings-form" id="join-class-form">
+                    <input type="hidden" name="form_type" value="join_class">
+                    <div class="form-group">
+                        <label for="class_code" class="form-label">班级代码</label>
+                        <input type="text" id="class_code" name="class_code" class="form-input" placeholder="请输入班级代码" required>
+                    </div>
+                    <div class="form-hint">
+                        输入班级代码加入其他教师创建的班级
+                    </div>
+                    <button type="submit" class="primary-btn">
+                        <span class="btn-label">加入班级</span>
+                    </button>
+                </form>
+                
+                {% if teaching_classes %}
+                <div class="joined-classes-section" style="margin-top: 24px;">
+                    <h3 class="card-subtitle">已加入的班级</h3>
+                    <div class="class-list">
+                        {% for class_info in teaching_classes %}
+                        <div class="joined-class-item">
+                            <div class="class-info">
+                                <span class="class-name">{{ class_info.name }}</span>
+                                <span class="class-code">代码: {{ class_info.code }}</span>
+                                <span class="class-subjects">分配科目: {{ class_info.assigned_subjects }}</span>
+                            </div>
+                            <div class="class-actions">
+                                {% if class_info.is_approved %}
+                                <span class="status-badge approved">已批准</span>
+                                {% else %}
+                                <span class="status-badge pending">待批准</span>
+                                {% endif %}
+                                <form method="POST" action="{{ url_for('settings.leave_class', class_id=class_info.id) }}" style="display: inline;" onsubmit="return confirm('确定要退出这个班级吗？');">
+                                    <button type="submit" class="outline-btn small-btn" style="margin-left: 8px;">退出</button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+from extensions import db
+from utils.time_utils import get_china_time, format_china_time
+
+class Whiteboard(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    board_id = db.Column(db.String(20), unique=True, nullable=False)
+    secret_key = db.Column(db.String(50), nullable=False)
+    class_id = db.Column(db.Integer, db.ForeignKey('class.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=get_china_time)
+    is_active = db.Column(db.Boolean, default=True)
+    subjects = db.Column(db.String(500))
+    is_online = db.Column(db.Boolean, default=False)
+    last_heartbeat = db.Column(db.DateTime)
+    
+    class_obj = db.relationship('Class', backref=db.backref('whiteboards', lazy=True))
+    
+    def __repr__(self):
+        return f'<Whiteboard {self.name}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'board_id': self.board_id,
+            'class_id': self.class_id,
+            'class_name': self.class_obj.name if self.class_obj else None,
+            'created_at': format_china_time(self.created_at),
+            'is_active': self.is_active,
+            'subjects': self.subjects,
+            'is_online': self.is_online,
+            'last_heartbeat': format_china_time(self.last_heartbeat)
+        }
+
+class WhiteboardStatusHistory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    whiteboard_id = db.Column(db.Integer, db.ForeignKey('whiteboard.id'), nullable=False)
+    is_online = db.Column(db.Boolean, default=False)
+    recorded_at = db.Column(db.DateTime, default=get_china_time)
+    
+    whiteboard = db.relationship('Whiteboard', backref=db.backref('status_history', lazy=True))
+    
+    def __repr__(self):
+        return f'<WhiteboardStatusHistory whiteboard:{self.whiteboard_id} online:{self.is_online}>'
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'whiteboard_id': self.whiteboard_id,
+            'is_online': self.is_online,
+            'recorded_at': format_china_time(self.recorded_at),
+            'whiteboard_name': self.whiteboard.name if self.whiteboard else None
+        }

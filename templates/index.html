@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Dynamic Class{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-container">
+        <div class="hero-content">
+            <h1 class="hero-title">Dlass - Dynamic Class</h1>
+            <p class="hero-subtitle">高效管理班级事务，提升教学效率</p>
+            
+            {% if not session.user_id %}
+            <div class="hero-actions">
+                <a href="{{ url_for('auth.login') }}" class="primary-btn large-btn">
+                    <span class="btn-label">开始使用</span>
+                </a>
+            </div>
+            {% else %}
+            <div class="hero-actions">
+                <a href="{{ url_for('main.dashboard') }}" class="primary-btn large-btn">
+                    <span class="btn-label">进入仪表板</span>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="features-section">
+    <div class="features-container">
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="material-icons">groups</i>
+                </div>
+                <h3 class="feature-title">学生管理</h3>
+                <p class="feature-description">轻松管理学生信息，包括基本信息、成绩和考勤记录。</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="material-icons">assignment</i>
+                </div>
+                <h3 class="feature-title">课程安排</h3>
+                <p class="feature-description">创建和管理课程表，安排教学计划和作业任务。</p>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="material-icons">analytics</i>
+                </div>
+                <h3 class="feature-title">成绩分析</h3>
+                <p class="feature-description">分析学生成绩趋势，生成详细报告和统计数据。</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

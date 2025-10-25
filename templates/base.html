@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dynamic Class{% endblock %}</title>
+    <!-- Material Icons -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <!-- 自定义CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- 移动端侧边栏遮罩 -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 移动端侧边栏 -->
+    <div class="mobile-sidebar" id="mobileSidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">菜单</h2>
+            <button class="sidebar-close" id="sidebarClose">
+                <i class="material-icons">close</i>
+            </button>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('main.dashboard') }}" class="sidebar-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
+                <i class="material-icons">dashboard</i>
+                <span>首页</span>
+            </a>
+            {% if session.user_id and session.role == 'teacher' %}
+            <a href="{{ url_for('classes.classes') }}" class="sidebar-link {% if request.endpoint == 'classes.classes' %}active{% endif %}">
+                <i class="material-icons">groups</i>
+                <span>班级</span>
+            </a>
+            {% endif %}
+            <a href="{{ url_for('settings.settings') }}" class="sidebar-link {% if request.endpoint == 'settings.settings' %}active{% endif %}">
+                <i class="material-icons">settings</i>
+                <span>设置</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            {% if session.user_id %}
+            <div class="sidebar-user">
+                <i class="material-icons user-icon">person</i>
+                <div class="user-info">
+                    <span class="user-name">{{ session.username }}</span>
+                    <span class="user-role">{{ session.role }}</span>
+                </div>
+            </div>
+            <a href="{{ url_for('auth.logout') }}" class="sidebar-logout">
+                <i class="material-icons">logout</i>
+                <span>退出登录</span>
+            </a>
+            {% else %}
+            <a href="{{ url_for('auth.login') }}" class="sidebar-login">
+                <i class="material-icons">login</i>
+                <span>登录</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 顶部导航栏 -->
+    <header class="main-header">
+        <div class="header-container">
+            <div class="header-brand">
+                <!-- 移动端汉堡菜单按钮 -->
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="material-icons">menu</i>
+                </button>
+                <h1 class="brand-title">Dlass</h1>
+            </div>
+            
+            <!-- 桌面端导航 -->
+            <nav class="header-nav desktop-nav">
+                <a href="{{ url_for('main.dashboard') }}" class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}">
+                    <i class="material-icons">dashboard</i>
+                    <span>首页</span>
+                </a>
+                {% if session.user_id and session.role == 'teacher' %}
+                <a href="{{ url_for('classes.classes') }}" class="nav-link {% if request.endpoint == 'classes.classes' %}active{% endif %}">
+                    <i class="material-icons">groups</i>
+                    <span>班级</span>
+                </a>
+                {% endif %}
+                <a href="{{ url_for('settings.settings') }}" class="nav-link {% if request.endpoint == 'settings.settings' %}active{% endif %}">
+                    <i class="material-icons">settings</i>
+                    <span>设置</span>
+                </a>
+            </nav>
+            
+            <div class="header-user">
+                {% if session.user_id %}
+                <div class="user-info desktop-user">
+                    <i class="material-icons user-icon">person</i>
+                    <span class="user-name">{{ session.username }} ({{ session.role }})</span>
+                </div>
+                <a href="{{ url_for('auth.logout') }}" class="logout-btn" title="退出">
+                    <i class="material-icons">logout</i>
+                </a>
+                {% else %}
+                <a href="{{ url_for('auth.login') }}" class="login-btn" title="登录">
+                    <i class="material-icons">login</i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区域 -->
+    <main class="main-content">
+        <div class="content-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="message {{ category }}">
+                        <div class="message-content">
+                            <i class="material-icons message-icon">
+                                {% if category == 'error' %}error{% else %}check_circle{% endif %}
+                            </i>
+                            <span class="message-text">{{ message }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- 引入Socket.IO -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <!-- 自定义JS -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    
+    <script>
+    // 移动端侧边栏功能
+    document.addEventListener('DOMContentLoaded', function() {
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileSidebar = document.getElementById('mobileSidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const sidebarClose = document.getElementById('sidebarClose');
+        
+        // 打开侧边栏
+        function openSidebar() {
+            mobileSidebar.classList.add('active');
+            sidebarOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        // 关闭侧边栏
+        function closeSidebar() {
+            mobileSidebar.classList.remove('active');
+            sidebarOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        
+        // 绑定事件
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', openSidebar);
+        }
+        
+        if (sidebarClose) {
+            sidebarClose.addEventListener('click', closeSidebar);
+        }
+        
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', closeSidebar);
+        }
+        
+        // 点击侧边栏链接时自动关闭侧边栏
+        const sidebarLinks = document.querySelectorAll('.sidebar-link');
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', closeSidebar);
+        });
+        
+        // ESC键关闭侧边栏
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSidebar();
+            }
+        });
+        
+        // 窗口大小变化时，如果从移动端切换到桌面端，自动关闭侧边栏
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                closeSidebar();
+            }
+        });
+    });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
