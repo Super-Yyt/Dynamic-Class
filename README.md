@@ -5,7 +5,6 @@
 https://img.shields.io/badge/Python-3.8+-blue.svg
 https://img.shields.io/badge/Flask-2.3+-green.svg
 https://img.shields.io/badge/Socket.IO-4.0+-orange.svg
-https://img.shields.io/badge/License-MIT-yellow.svg
 
 现代化、实时、高效的班级管理与信息发布系统
 
