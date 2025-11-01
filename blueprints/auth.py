@@ -22,6 +22,11 @@ def casdoor_login_teacher():
     auth_url = get_casdoor_auth_url('teacher')
     return redirect(auth_url)
 
+@auth_bp.route('/auth/casdoor/developer')
+def casdoor_login_developer():
+    auth_url = get_casdoor_auth_url('developer')
+    return redirect(auth_url)
+
 @auth_bp.route('/callback')
 def callback():
     code = request.args.get('code')
@@ -51,27 +56,60 @@ def callback():
     avatar = user_info.get('picture')
     display_name = user_info.get('name', username)
     
+    # 查找用户，优先通过casdoor_id，其次通过username+organization
     user = User.query.filter_by(casdoor_id=casdoor_id).first()
+    
     if not user:
+        # 检查相同用户名但不同组织的用户
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
+            # 用户名冲突，生成新的用户名
+            base_username = username
+            counter = 1
+            while User.query.filter_by(username=username).first():
+                username = f"{base_username}_{counter}"
+                counter += 1
+            flash(f'检测到用户名冲突，您的用户名已自动调整为: {username}', 'info')
+        
         user = User(
             casdoor_id=casdoor_id,
             username=username,
             email=email,
             avatar=avatar,
             display_name=display_name,
-            role=role
+            role=role,
+            organization=role  # 使用角色作为组织标识
         )
         db.session.add(user)
         db.session.commit()
-        flash(f'账户创建成功！欢迎{"教师" if role == "teacher" else "学生"}使用班级管理系统。', 'success')
+        
+        role_display = {
+            'student': '学生',
+            'teacher': '教师', 
+            'developer': '开发者'
+        }.get(role, '用户')
+        
+        flash(f'账户创建成功！欢迎{role_display}使用班级管理系统。', 'success')
     else:
+        # 更新用户信息
         user.email = email
         user.avatar = avatar
         user.display_name = display_name
         user.last_login = get_china_time()
-        if user.role != role:
-            user.role = role
-            flash(f'您的角色已更新为{"教师" if role == "teacher" else "学生"}。', 'info')
+        
+        # 如果组织发生变化，更新组织信息
+        if user.organization != role:
+            old_org = user.organization
+            user.organization = role
+            user.role = role  # 同时更新角色
+            
+            org_display = {
+                'student': '学生',
+                'teacher': '教师',
+                'developer': '开发者'
+            }
+            flash(f'您的身份已从{org_display.get(old_org, old_org)}变更为{org_display.get(role, role)}。', 'info')
+        
         db.session.commit()
     
     session['user_id'] = user.id
@@ -79,6 +117,7 @@ def callback():
     session['email'] = user.email
     session['avatar'] = user.avatar
     session['role'] = user.role
+    session['organization'] = user.organization
     
     session.pop('oauth_state', None)
     session.pop('login_role', None)

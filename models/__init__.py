@@ -7,6 +7,7 @@ from .announcement import Announcement
 from .message import Message
 from .system_setting import SystemSetting
 from .note import Note
+from .developer import Developer, DeveloperApp
 
 __all__ = [
     'User',
@@ -21,5 +22,7 @@ __all__ = [
     'Announcement',
     'Message',
     'SystemSetting',
-    'Note'
+    'Note',
+    'Developer',
+    'DeveloperApp'
 ]

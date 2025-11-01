@@ -1,0 +1,155 @@
+{% extends "dev.html" %}
+
+{% block title %}白板Token - {{ whiteboard.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">白板访问Token</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>白板信息</h5>
+                        <table class="table table-bordered">
+                            <tr>
+                                <th width="30%">白板名称</th>
+                                <td>{{ whiteboard.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>所属班级</th>
+                                <td>{{ whiteboard.class_obj.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Board ID</th>
+                                <td><code>{{ whiteboard.board_id }}</code></td>
+                            </tr>
+                            <tr>
+                                <th>Token生成时间</th>
+                                <td>{{ whiteboard.token_created_at }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>访问Token</h5>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Token</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" value="{{ token }}" readonly id="tokenInput">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('tokenInput')">
+                                            <i class="bi bi-clipboard"></i> 复制
+                                        </button>
+                                    </div>
+                                    <div class="form-text">此Token用于框架认证，请妥善保管</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h5>Dlass链接</h5>
+                        <div class="card">
+                            <div class="card-body">
+                                <p class="mb-2">用于配置客户端框架的深度链接：</p>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" value="{{ dlass_url }}" readonly id="dlassUrl">
+                                    <button class="btn btn-outline-primary" type="button" onclick="copyToClipboard('dlassUrl')">
+                                        <i class="bi bi-clipboard"></i> 复制链接
+                                    </button>
+                                </div>
+                                <div class="form-text mt-2">
+                                    <i class="bi bi-info-circle"></i> 将此链接发送给框架使用者，他们可以通过此链接自动配置白板访问
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-shield-exclamation"></i> 安全提醒</h6>
+                        <ul class="mb-0">
+                            <li>Token提供对白板的完全访问权限，请勿泄露给不信任的第三方</li>
+                            <li>如果Token泄露，请立即重置</li>
+                            <li>定期更换Token以提高安全性</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <form method="POST" action="{{ url_for('whiteboards.reset_whiteboard_token', whiteboard_id=whiteboard.id) }}" class="me-md-2">
+                            <button type="submit" class="btn btn-warning" onclick="return confirm('确定要重置Token吗？旧的Token将立即失效！')">
+                                <i class="bi bi-arrow-repeat"></i> 重置Token
+                            </button>
+                        </form>
+                        <a href="{{ url_for('whiteboards.view_whiteboard', whiteboard_id=whiteboard.id) }}" class="btn btn-secondary">返回白板</a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- API使用说明 -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">API使用说明</h5>
+                </div>
+                <div class="card-body">
+                    <p>开发者可以使用以下方式通过框架认证接口获取白板密钥：</p>
+                    
+                    <div class="bg-dark text-light p-3 rounded mb-3">
+                        <pre class="mb-0"><code>POST /api/framework/auth
+
+{
+    "app_id": "您的App ID",
+    "app_secret": "您的App Secret", 
+    "token": "{{ token }}"
+}</code></pre>
+                    </div>
+                    
+                    <p>成功响应：</p>
+                    <div class="bg-dark text-light p-3 rounded">
+                        <pre class="mb-0"><code>{
+    "success": true,
+    "board_id": "{{ whiteboard.board_id }}",
+    "secret_key": "白板密钥",
+    "whiteboard_name": "{{ whiteboard.name }}"
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    element.select();
+    element.setSelectionRange(0, 99999); // For mobile devices
+    
+    navigator.clipboard.writeText(element.value).then(() => {
+        // 显示复制成功提示
+        const originalText = event.target.innerHTML;
+        event.target.innerHTML = '<i class="bi bi-check"></i> 已复制';
+        event.target.classList.remove('btn-outline-secondary', 'btn-outline-primary');
+        event.target.classList.add('btn-success');
+        
+        setTimeout(() => {
+            event.target.innerHTML = originalText;
+            event.target.classList.remove('btn-success');
+            if (elementId === 'dlassUrl') {
+                event.target.classList.add('btn-outline-primary');
+            } else {
+                event.target.classList.add('btn-outline-secondary');
+            }
+        }, 2000);
+    }).catch(err => {
+        console.error('复制失败: ', err);
+        alert('复制失败，请手动选择复制');
+    });
+}
+</script>
+{% endblock %}

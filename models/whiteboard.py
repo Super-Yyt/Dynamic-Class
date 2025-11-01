@@ -1,5 +1,7 @@
+# models/whiteboard.py
 from extensions import db
 from utils.time_utils import get_china_time, format_china_time
+import secrets
 
 class Whiteboard(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -12,6 +14,8 @@ class Whiteboard(db.Model):
     subjects = db.Column(db.String(500))
     is_online = db.Column(db.Boolean, default=False)
     last_heartbeat = db.Column(db.DateTime)
+    token = db.Column(db.String(100), unique=True)
+    token_created_at = db.Column(db.DateTime, default=get_china_time)
     
     class_obj = db.relationship('Class', backref=db.backref('whiteboards', lazy=True))
     
@@ -29,8 +33,16 @@ class Whiteboard(db.Model):
             'is_active': self.is_active,
             'subjects': self.subjects,
             'is_online': self.is_online,
-            'last_heartbeat': format_china_time(self.last_heartbeat)
+            'last_heartbeat': format_china_time(self.last_heartbeat),
+            'token': self.token,
+            'token_created_at': format_china_time(self.token_created_at)
         }
+    
+    def generate_token(self):
+        """生成新的token"""
+        self.token = secrets.token_urlsafe(32)
+        self.token_created_at = get_china_time()
+        return self.token
 
 class WhiteboardStatusHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)

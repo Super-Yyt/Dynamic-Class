@@ -51,8 +51,18 @@ def view_whiteboard(whiteboard_id):
 #        db.session.commit()
 #        flash('科目设置已更新', 'success')
 #        return redirect(url_for('whiteboards.view_whiteboard', whiteboard_id=whiteboard_id))
-    
-    whiteboard_url = f"dlass://config/{whiteboard.board_id}/{whiteboard.secret_key}"
+    if whiteboard.token is None:
+        has_token = False
+        token_value = None
+    else:
+        has_token = True
+        token_value = whiteboard.token
+
+    # 只在有token时生成完整URL
+    if has_token:
+        whiteboard_url = f"dlass://config/{whiteboard.id}/{whiteboard.board_id}?temp_secret={whiteboard.secret_key}/{token_value}"
+    else:
+        whiteboard_url = None
     
     tasks = Task.query.filter_by(whiteboard_id=whiteboard_id).order_by(Task.created_at.desc()).all()
     announcements = Announcement.query.filter_by(whiteboard_id=whiteboard_id).order_by(Announcement.created_at.desc()).all()
@@ -73,13 +83,14 @@ def view_whiteboard(whiteboard_id):
         assignment.due_date_str = format_china_time(assignment.due_date)
     
     whiteboard.created_at_str = format_china_time(whiteboard.created_at)
-    
+    print("白板token：", whiteboard.token)
     return render_template('view_whiteboard.html', 
                          username=session.get('username'),
                          role=session.get('role'),
                          avatar=session.get('avatar'),
                          whiteboard=whiteboard,
                          whiteboard_url=whiteboard_url,
+                         has_token=has_token,
                          tasks=tasks,
                          announcements=announcements,
                          assignments=assignments,
@@ -88,6 +99,44 @@ def view_whiteboard(whiteboard_id):
                          is_teaching_teacher=is_teaching_teacher,
                          assigned_subjects=assigned_subjects,
                          class_subjects_list=class_subjects_list)
+
+@whiteboards_bp.route('/<int:whiteboard_id>/token')
+@login_required
+@teacher_required  
+def get_whiteboard_token(whiteboard_id):
+    """获取白板token（教师权限）"""
+    whiteboard = Whiteboard.query.get_or_404(whiteboard_id)
+    user = db.session.get(User, session['user_id'])
+    
+    # 验证教师权限
+    if not (whiteboard.class_obj.teacher_id == user.id):
+        flash('只有班主任可以查看token', 'error')
+        return redirect(url_for('whiteboards.view_whiteboard', whiteboard_id=whiteboard_id))
+    
+    # 如果还没有token，生成一个
+    if not whiteboard.token:
+        whiteboard.generate_token()
+        db.session.commit()
+    
+    return redirect(url_for('whiteboards.view_whiteboard', whiteboard_id=whiteboard_id))
+
+@whiteboards_bp.route('/<int:whiteboard_id>/reset-token', methods=['POST'])
+@login_required
+@teacher_required
+def reset_whiteboard_token(whiteboard_id):
+    """重置白板token"""
+    whiteboard = Whiteboard.query.get_or_404(whiteboard_id)
+    user = db.session.get(User, session['user_id'])
+    
+    if not (whiteboard.class_obj.teacher_id == user.id):
+        flash('只有班主任可以重置token', 'error')
+        return redirect(url_for('whiteboards.view_whiteboard', whiteboard_id=whiteboard_id))
+    
+    whiteboard.generate_token()
+    db.session.commit()
+    
+    flash('Token已重置成功', 'success')
+    return redirect(url_for('whiteboards.get_whiteboard_token', whiteboard_id=whiteboard_id))
 
 @whiteboards_bp.route('/classes/<int:class_id>/create', methods=['GET', 'POST'])
 @login_required

@@ -10,12 +10,20 @@ def get_casdoor_config(role):
             'client_secret': current_app.config['CASDOOR_TEACHER_CLIENT_SECRET'],
             'org_name': current_app.config['CASDOOR_TEACHER_ORG']
         }
-    else:  # student
+    elif role == 'student':
         return {
             'client_id': current_app.config['CASDOOR_STUDENT_CLIENT_ID'],
             'client_secret': current_app.config['CASDOOR_STUDENT_CLIENT_SECRET'],
             'org_name': current_app.config['CASDOOR_STUDENT_ORG']
         }
+    elif role == 'developer':
+        return {
+            'client_id': current_app.config['CASDOOR_DEVELOPER_CLIENT_ID'],
+            'client_secret': current_app.config['CASDOOR_DEVELOPER_CLIENT_SECRET'],
+            'org_name': current_app.config['CASDOOR_DEVELOPER_ORG']
+        }
+    else:
+        return None
 
 def get_casdoor_auth_url(role='student'):
     state = secrets.token_urlsafe(16)
@@ -23,6 +31,8 @@ def get_casdoor_auth_url(role='student'):
     session['login_role'] = role
     
     config = get_casdoor_config(role)
+    if not config:
+        raise ValueError(f"不支持的登录角色: {role}")
     
     params = {
         'client_id': config['client_id'],

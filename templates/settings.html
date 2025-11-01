@@ -22,10 +22,6 @@
                         <span class="setting-value">{{ user.email or '未设置' }}</span>
                     </div>
                     <div class="setting-item">
-                        <span class="setting-label">角色:</span>
-                        <span class="setting-value">{{ '教师' if user.role == 'teacher' else '学生' }}</span>
-                    </div>
-                    <div class="setting-item">
                         <span class="setting-label">最后登录:</span>
                         <span class="setting-value">
                             {% if user.last_login %}

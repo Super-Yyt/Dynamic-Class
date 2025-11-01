@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from datetime import timedelta
 from extensions import db, socketio
 from models.whiteboard import Whiteboard, WhiteboardStatusHistory
+from models.developer import DeveloperApp
 from models.task import Task
 from models.assignment import Assignment
 from models.announcement import Announcement
@@ -315,3 +316,39 @@ def whiteboard_heartbeat():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': '心跳更新失败'}), 500
+
+@api_bp.route('/framework/auth', methods=['POST'])
+def framework_auth():
+    """框架认证接口 - 使用app凭证和token获取白板密钥"""
+    data = request.json
+    
+    app_id = data.get('app_id')
+    app_secret = data.get('app_secret')
+    id = data.get('id')
+    token = data.get('token')
+    
+    if not all([app_id, app_secret, token]):
+        return jsonify({'error': '缺少必要参数'}), 400
+    
+    # 验证开发者应用 
+    app = DeveloperApp.query.filter_by(
+        app_id=app_id, 
+        app_secret=app_secret,
+        status='approved'
+    ).first()
+    
+    if not app:
+        return jsonify({'error': '应用认证失败'}), 401
+    
+    # 验证白板token
+    whiteboard = Whiteboard.query.filter_by(id=id, token=token, is_active=True).first()
+    if not whiteboard:
+        return jsonify({'error': '白板token无效'}), 401
+    
+    return jsonify({
+        'success': True,
+        'board_id': whiteboard.board_id,
+        'secret_key': whiteboard.secret_key,
+        'whiteboard_name': whiteboard.name,
+        'class_name': whiteboard.class_obj.name if whiteboard.class_obj else None
+    })

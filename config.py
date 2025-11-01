@@ -22,6 +22,11 @@ class Config:
     CASDOOR_STUDENT_CLIENT_SECRET = os.environ.get('CASDOOR_STUDENT_CLIENT_SECRET', 'student-client-secret')
     CASDOOR_STUDENT_ORG = os.environ.get('CASDOOR_STUDENT_ORG', 'student-org')
     
+    # 开发者应用配置
+    CASDOOR_DEVELOPER_CLIENT_ID = os.environ.get('CASDOOR_DEVELOPER_CLIENT_ID', 'developer-client-id')
+    CASDOOR_DEVELOPER_CLIENT_SECRET = os.environ.get('CASDOOR_DEVELOPER_CLIENT_SECRET', 'developer-client-secret')
+    CASDOOR_DEVELOPER_ORG = os.environ.get('CASDOOR_DEVELOPER_ORG', 'developer-org')
+    
     # SMTP邮件配置
     SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtp.qq.com')
     SMTP_PORT = int(os.environ.get('SMTP_PORT', 587))

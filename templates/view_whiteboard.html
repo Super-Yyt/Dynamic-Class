@@ -65,7 +65,13 @@
                                 <h3>连接信息</h3>
                                 <div class="info-item">
                                     <span class="info-label">连接URL:</span>
-                                    <span class="info-value url-text">{{ whiteboard_url }}</span>
+                                        <span class="info-value url-text">
+                                            {% if has_token %}
+                                                {{ whiteboard_url }}
+                                            {% else %}
+                                                未生成Token <a href="{{ url_for('whiteboards.get_whiteboard_token', whiteboard_id=whiteboard.id) }}">点击以生成Token</a>
+                                            {% endif %}
+                                        </span>
                                 </div>
                                 <div class="qrcode-container" id="qrcode"></div>
                             </div>

@@ -36,6 +36,7 @@ def create_app():
         from blueprints.settings import settings_bp
         from blueprints.notes import notes_bp
         from blueprints.web_notes import web_notes_bp
+        from blueprints.developer import developer_bp
 
         app.register_blueprint(auth_bp)
         app.register_blueprint(main_bp)
@@ -48,6 +49,7 @@ def create_app():
         app.register_blueprint(settings_bp)
         app.register_blueprint(notes_bp)
         app.register_blueprint(web_notes_bp)
+        app.register_blueprint(developer_bp)
 
     # 初始化定时任务
     from utils.scheduler import scheduler_manager

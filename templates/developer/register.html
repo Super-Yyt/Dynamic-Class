@@ -1,0 +1,52 @@
+{% extends "dev.html" %}
+
+{% block title %}开发者注册 - Dlass{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">开发者注册</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-4">
+                        注册成为开发者，创建您自己的应用来集成Dlass系统。
+                    </p>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="company" class="form-label">公司/组织名称 *</label>
+                            <input type="text" class="form-control" id="company" name="company" 
+                                   value="{{ request.form.company }}" required>
+                            <div class="form-text">您的公司、组织或个人名称</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">开发者描述</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="4">{{ request.form.description }}</textarea>
+                            <div class="form-text">简要描述您开发的应用类型和使用场景</div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-info-circle"></i> 注册说明</h6>
+                            <ul class="mb-0">
+                                <li>开发者账号需要审核通过后才能创建应用</li>
+                                <li>请确保提供真实有效的组织信息</li>
+                                <li>应用创建后可以获得API访问权限</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">注册开发者</button>
+                            <a href="{{ url_for('developer.developer_console') }}" class="btn btn-outline-secondary">返回控制台</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
