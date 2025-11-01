@@ -1,12 +1,13 @@
 from flask import Blueprint, request, jsonify
 from datetime import timedelta
 from extensions import db, socketio
+from models.user import User
 from models.whiteboard import Whiteboard, WhiteboardStatusHistory
 from models.developer import DeveloperApp
 from models.task import Task
 from models.assignment import Assignment
 from models.announcement import Announcement
-from utils.auth_utils import whiteboard_auth_required
+from utils.auth_utils import whiteboard_auth_required, user_token_auth_required
 from utils.time_utils import parse_china_time, format_china_time, get_china_time
 
 api_bp = Blueprint('api', __name__, url_prefix='/api/whiteboard')
@@ -351,4 +352,137 @@ def framework_auth():
         'secret_key': whiteboard.secret_key,
         'whiteboard_name': whiteboard.name,
         'class_name': whiteboard.class_obj.name if whiteboard.class_obj else None
+    })
+
+@api_bp.route('/reset-secret', methods=['POST'])
+def reset_whiteboard_secret():
+    data = request.json
+    
+    # 获取请求参数
+    whiteboard_id = data.get('id')
+    token = data.get('token')
+    
+    if not whiteboard_id or not token:
+        return jsonify({'error': '缺少必要参数：id 和 token'}), 400
+    
+    # 验证白板是否存在且token匹配
+    whiteboard = Whiteboard.query.filter_by(
+        id=whiteboard_id, 
+        token=token, 
+        is_active=True
+    ).first()
+    
+    if not whiteboard:
+        return jsonify({'error': '白板ID或token无效'}), 401
+    
+    try:
+        # 生成新的白板密钥
+        from utils.code_utils import generate_whiteboard_credentials
+        _, new_secret_key = generate_whiteboard_credentials()
+        
+        # 更新白板密钥
+        whiteboard.secret_key = new_secret_key
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '白板密钥重置成功',
+            'new_secret_key': new_secret_key,
+            'whiteboard_id': whiteboard.id,
+            'whiteboard_name': whiteboard.name
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': '重置密钥时发生错误'}), 500
+    
+@api_bp.route('/user/whiteboards', methods=['GET'])
+@user_token_auth_required
+def get_user_whiteboards():
+    """通过用户token获取用户所有可访问的白板信息"""
+    user = request.user
+    
+    try:
+        accessible_whiteboards = user.get_accessible_whiteboards()
+        
+        whiteboards_data = []
+        for whiteboard in accessible_whiteboards:
+            whiteboards_data.append({
+                'id': whiteboard.id,
+                'name': whiteboard.name,
+                'board_id': whiteboard.board_id,
+                'secret_key': whiteboard.secret_key,
+                'class_name': whiteboard.class_obj.name if whiteboard.class_obj else None,
+                'class_id': whiteboard.class_id,
+                'is_online': whiteboard.is_online,
+                'last_heartbeat': format_china_time(whiteboard.last_heartbeat) if whiteboard.last_heartbeat else None,
+                'created_at': format_china_time(whiteboard.created_at)
+            })
+        
+        return jsonify({
+            'success': True,
+            'data': whiteboards_data,
+            'count': len(whiteboards_data),
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': '获取白板信息失败'}), 500
+
+@api_bp.route('/framework/auth-with-token', methods=['POST'])
+def framework_auth_with_token():
+    """框架认证接口 - 使用app凭证和用户token获取所有白板信息"""
+    data = request.json
+    
+    app_id = data.get('app_id')
+    app_secret = data.get('app_secret')
+    user_token = data.get('user_token')
+    
+    if not all([app_id, app_secret, user_token]):
+        return jsonify({'error': '缺少必要参数'}), 400
+    
+    # 验证开发者应用 
+    app = DeveloperApp.query.filter_by(
+        app_id=app_id, 
+        app_secret=app_secret,
+        status='approved'
+    ).first()
+    
+    if not app:
+        return jsonify({'error': '应用认证失败'}), 401
+    
+    # 验证用户token
+    user = User.query.filter_by(user_token=user_token, role='teacher', is_active=True).first()
+    if not user:
+        return jsonify({'error': '用户token无效'}), 401
+    
+    # 获取用户所有可访问的白板
+    accessible_whiteboards = user.get_accessible_whiteboards()
+    
+    whiteboards_data = []
+    for whiteboard in accessible_whiteboards:
+        whiteboards_data.append({
+            'id': whiteboard.id,
+            'name': whiteboard.name,
+            'board_id': whiteboard.board_id,
+            'secret_key': whiteboard.secret_key,
+            'class_name': whiteboard.class_obj.name if whiteboard.class_obj else None,
+            'class_id': whiteboard.class_id,
+            'is_online': whiteboard.is_online,
+            'last_heartbeat': format_china_time(whiteboard.last_heartbeat) if whiteboard.last_heartbeat else None,
+            'created_at': format_china_time(whiteboard.created_at)
+        })
+    
+    return jsonify({
+        'success': True,
+        'whiteboards': whiteboards_data,
+        'count': len(whiteboards_data),
+        'user': {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email
+        }
     })

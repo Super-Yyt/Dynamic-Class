@@ -4,6 +4,19 @@
 
 本文档描述了白板客户端与服务端之间的完整通信协议，包括 RESTful API 和 Socket.IO 实时通信。
 
+在2025/11/1日之后，所有白板相关的api支持教师的用户token去请求
+
+由auth相关修饰器可知
+user_token = request.headers.get('X-User-Token')
+即：
+```javascript
+headers: {
+  'X-Board-ID': 'your_board_id',
+  'X-User-Token': 'your_token'
+}
+```
+
+
 ## 基础信息
 
 - **服务端地址**: `https://dlass.tech`

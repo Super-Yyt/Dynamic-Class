@@ -22,6 +22,7 @@ def settings():
             # 这里需要添加保存科目设置的逻辑
             # 例如: user.subjects = subjects
             # db.session.commit()
+            # 已废弃
             flash('科目设置已更新', 'success')
             
         elif form_type == 'join_class':
@@ -80,13 +81,14 @@ def settings():
                 'assigned_subjects': tc.assigned_subjects or '未分配'
             }
             teaching_classes.append(class_info)
-    
+    token=user.user_token
     return render_template('settings.html',
                          username=session.get('username'),
                          role=session.get('role'),
                          avatar=session.get('avatar'),
                          user=user,
-                         teaching_classes=teaching_classes)
+                         teaching_classes=teaching_classes,
+                         token=token)
 
 @settings_bp.route('/classes/<int:class_id>/settings')
 @login_required
@@ -269,3 +271,69 @@ def leave_class(class_id):
         flash('您未加入该班级', 'warning')
     
     return redirect(url_for('settings.settings'))
+
+@settings_bp.route('/generate-user-token', methods=['POST'])
+@login_required
+@teacher_required
+def generate_user_token():
+    """生成用户token"""
+    user = db.session.get(User, session['user_id'])
+    
+    try:
+        token = user.generate_user_token()
+        db.session.commit()
+        flash('用户令牌生成成功！', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('生成令牌失败，请稍后重试', 'error')
+    
+    return redirect(url_for('settings.settings'))
+
+@settings_bp.route('/reset-user-token', methods=['POST'])
+@login_required
+@teacher_required
+def reset_user_token():
+    """重置用户token"""
+    user = db.session.get(User, session['user_id'])
+    
+    try:
+        token = user.generate_user_token()
+        db.session.commit()
+        flash('用户令牌已重置！', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('重置令牌失败，请稍后重试', 'error')
+    
+    return redirect(url_for('settings.settings'))
+
+@settings_bp.route('/revoke-user-token', methods=['POST'])
+@login_required
+@teacher_required
+def revoke_user_token():
+    """撤销用户token"""
+    user = db.session.get(User, session['user_id'])
+    
+    try:
+        user.revoke_user_token()
+        db.session.commit()
+        flash('用户令牌已撤销', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('撤销令牌失败，请稍后重试', 'error')
+    
+    return redirect(url_for('settings.settings'))
+
+@settings_bp.route('/api/user-token')
+@login_required
+@teacher_required
+def get_user_token_api():
+    """获取用户token的API端点"""
+    user = db.session.get(User, session['user_id'])
+    
+    if not user.user_token:
+        return jsonify({'error': '用户令牌不存在'}), 404
+    
+    return jsonify({
+        'success': True,
+        'user_token': user.user_token
+    })

@@ -36,6 +36,77 @@
         </div>
         
         {% if user.role == 'teacher' %}
+        <!-- 用户Token管理 -->
+        <div class="settings-card">
+            <div class="card-content">
+                <h2 class="card-title">API访问令牌</h2>
+                <div class="token-section">
+                    {% if user.user_token %}
+                    <div class="token-info">
+                        <div class="setting-item">
+                            <span class="setting-label">令牌状态:</span>
+                            <span class="setting-value status-active">已激活</span>
+                        </div>
+                        <div class="setting-item">
+                            <span class="setting-label">创建时间:</span>
+                            <span class="setting-value">
+                                {{ user.token_created_at.strftime('%Y-%m-%d %H:%M:%S') if user.token_created_at else '未知' }}
+                            </span>
+                        </div>
+                        <div class="setting-item">
+                            <span class="setting-label">用户令牌:</span>
+                            <div class="token-display">
+                                <code id="user-token-value" class="token-value">{{ user.user_token }}</code>
+                                <div class="token-buttons">
+                                    <button type="button" class="copy-btn" onclick="copyTokenToClipboard()" title="复制令牌">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="qrcode-btn" onclick="showTokenQRCode()" title="显示二维码">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                            <path d="M7 7h.01M7 11h.01M11 7h.01M11 11h.01M15 7h.01M15 11h.01M7 15h.01M11 15h.01M15 15h3"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="token-warning">
+                            <strong>安全警告:</strong> 此令牌可以访问您所有班级的白板数据，请妥善保管，不要泄露给他人。
+                        </div>
+                        <div class="token-actions">
+                            <form method="POST" action="{{ url_for('settings.reset_user_token') }}" 
+                                  style="display: inline; margin-right: 8px;"
+                                  onsubmit="return confirm('重置令牌将使现有令牌立即失效，确定要继续吗？');">
+                                <button type="submit" class="primary-btn small-btn">重置令牌</button>
+                            </form>
+                            <form method="POST" action="{{ url_for('settings.revoke_user_token') }}" 
+                                  style="display: inline;"
+                                  onsubmit="return confirm('撤销令牌将立即禁用API访问，确定要继续吗？');">
+                                <button type="submit" class="outline-btn small-btn">撤销令牌</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="token-info">
+                        <div class="setting-item">
+                            <span class="setting-label">令牌状态:</span>
+                            <span class="setting-value status-inactive">未激活</span>
+                        </div>
+                        <div class="token-hint">
+                            生成用户令牌后，第三方应用可以使用该令牌访问您所有班级下的白板数据。
+                        </div>
+                        <form method="POST" action="{{ url_for('settings.generate_user_token') }}">
+                            <button type="submit" class="primary-btn">生成用户令牌</button>
+                        </form>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
         <div class="settings-card">
             <div class="card-content">
                 <h2 class="card-title">加入班级</h2>
@@ -84,4 +155,335 @@
         {% endif %}
     </div>
 </div>
+
+<!-- 二维码模态框 -->
+<div id="qrcode-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>用户令牌二维码</h3>
+            <span class="close" onclick="closeTokenQRCode()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="qrcode-container">
+                <canvas id="qrcode-canvas"></canvas>
+            </div>
+            <div class="qrcode-instructions">
+                <p>使用支持二维码扫描的应用扫描此二维码获取您的用户令牌。</p>
+                <p class="qrcode-token-hint">令牌: <code id="qrcode-token-preview"></code></p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="outline-btn" onclick="closeTokenQRCode()">关闭</button>
+            <button type="button" class="primary-btn" onclick="downloadQRCode()">下载二维码</button>
+        </div>
+    </div>
+</div>
+
+<script>
+function copyTokenToClipboard() {
+    const tokenElement = document.getElementById('user-token-value');
+    const token = tokenElement.textContent;
+    
+    // 使用现代剪贴板API
+    navigator.clipboard.writeText(token).then(function() {
+        // 显示复制成功提示
+        showCopySuccess();
+    }).catch(function(err) {
+        const textArea = document.createElement('textarea');
+        textArea.value = token;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            showCopySuccess();
+        } catch (err) {
+            alert('复制失败，请手动复制令牌');
+        }
+        document.body.removeChild(textArea);
+    });
+    
+    function showCopySuccess() {
+        const button = event.target.closest('.copy-btn');
+        if (button) {
+            const originalHTML = button.innerHTML;
+            button.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"></path></svg>';
+            button.style.color = '#28a745';
+            setTimeout(function() {
+                button.innerHTML = originalHTML;
+                button.style.color = '';
+            }, 2000);
+        }
+    }
+}
+
+function showTokenQRCode() {
+    const token = document.getElementById('user-token-value').textContent;
+    const modal = document.getElementById('qrcode-modal');
+    const canvas = document.getElementById('qrcode-canvas');
+    const tokenPreview = document.getElementById('qrcode-token-preview');
+    
+    // 显示token预览（前10位加省略号）
+    tokenPreview.textContent = token.substring(0, 10) + '...';
+    
+    // 清空canvas（清除可能存在的旧二维码）
+    const context = canvas.getContext('2d');
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    
+    try {
+        if (window.tokenQRCodeInstance) {
+            window.tokenQRCodeInstance.clear();
+        }
+        // 创建新的二维码实例
+        window.tokenQRCodeInstance = new QRCode(canvas, {
+            text: token,       // 要编码的内容
+            width: 256,        // 二维码宽度
+            height: 256,       // 二维码高度
+            colorDark: '#000000',  // 深色模块颜色
+            colorLight: '#FFFFFF', // 浅色模块颜色
+            correctLevel: QRCode.CorrectLevel.H // 纠错等级（高）
+        });
+        
+        // 显示模态框
+        modal.style.display = 'block';
+    } catch (error) {
+        console.error('生成二维码失败:', error);
+        alert('生成二维码失败，请重试');
+    }
+}
+
+
+function closeTokenQRCode() {
+    const modal = document.getElementById('qrcode-modal');
+    modal.style.display = 'none';
+}
+
+function downloadQRCode() {
+    const canvas = document.getElementById('qrcode-canvas');
+    const token = document.getElementById('user-token-value').textContent;
+    const username = '{{ user.username }}';
+    
+    // 创建下载链接
+    const link = document.createElement('a');
+    link.download = `dlass-token-${username}.png`;
+    link.href = canvas.toDataURL('image/png');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// 页面加载后更新API示例中的令牌占位符
+document.addEventListener('DOMContentLoaded', function() {
+    const tokenElement = document.getElementById('user-token-value');
+    if (tokenElement) {
+        const token = tokenElement.textContent;
+        const placeholders = document.querySelectorAll('#token-placeholder, #token-placeholder2');
+        placeholders.forEach(placeholder => {
+            placeholder.textContent = token;
+        });
+    }
+    
+    // 点击模态框外部关闭
+    const modal = document.getElementById('qrcode-modal');
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            closeTokenQRCode();
+        }
+    });
+});
+</script>
+
+<style>
+.token-section {
+    margin-top: 16px;
+}
+
+.token-info {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.status-active {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.status-inactive {
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.token-hint {
+    color: #6c757d;
+    font-size: 14px;
+    margin: 12px 0;
+    line-height: 1.4;
+}
+
+.token-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0;
+}
+
+.token-value {
+    background: #fff;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    flex: 1;
+    word-break: break-all;
+}
+
+.token-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.copy-btn, .qrcode-btn {
+    background: #fff;
+    border: 1px solid #007bff;
+    border-radius: 4px;
+    padding: 6px 8px;
+    cursor: pointer;
+    color: #007bff;
+    transition: all 0.2s;
+}
+
+.copy-btn:hover, .qrcode-btn:hover {
+    background: #007bff;
+    color: #fff;
+}
+
+.token-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin: 12px 0;
+    font-size: 14px;
+    color: #856404;
+}
+
+.token-actions {
+    margin-top: 16px;
+}
+
+.small-btn {
+    padding: 6px 12px;
+    font-size: 14px;
+}
+
+.api-docs {
+    font-size: 14px;
+}
+
+.api-example {
+    margin-bottom: 16px;
+}
+
+.code-block {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 12px;
+    margin-top: 8px;
+    overflow-x: auto;
+}
+
+.code-block code {
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #e83e8c;
+    white-space: pre-wrap;
+}
+
+/* 模态框样式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.close {
+    color: #6c757d;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close:hover {
+    color: #000;
+}
+
+.modal-body {
+    padding: 20px;
+    text-align: center;
+}
+
+#qrcode-container {
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: center;
+}
+
+#qrcode-canvas {
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+}
+
+.qrcode-instructions {
+    font-size: 14px;
+    color: #6c757d;
+    margin-top: 16px;
+}
+
+.qrcode-token-hint {
+    margin-top: 8px;
+    font-size: 13px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px 20px;
+    border-top: 1px solid #e9ecef;
+}
+</style>
 {% endblock %}
