@@ -2,12 +2,12 @@ import requests
 
 url = "http://localhost:5000/api/whiteboard/upload_note"
 headers = {
-    "X-Board-ID": "1TNT0FEL",
-    "X-Secret-Key": "LOCJRy2GjXn9LlNj"
+    "X-Board-ID": "CBJSH5QG",
+    "X-Secret-Key": "QZ1LfLjH0YIoVhrS"
 }
 
 files = {
-    "file": ("test.pdf", open("app-for-test/test.pdf", "rb"), "application/pdf")
+    "file": ("test.jpg", open("app-for-test/v2-12f8da92883cc63efc28682aba59c973_1440w.jpg", "rb"), "application/pdf")
 }
 
 data = {

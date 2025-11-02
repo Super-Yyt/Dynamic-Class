@@ -1649,3 +1649,12 @@ body.sidebar-open {
     font-size: 12px;
     border-width: 1px;
 }
+
+.action-preview {
+    color: #7f8c8d;
+}
+
+.action-preview:hover {
+    color: #3498db;
+    background: #f8f9fa;
+}
