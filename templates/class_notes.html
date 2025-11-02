@@ -50,6 +50,12 @@
     padding: 20px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.12);
 }
 
 .stat-value {
@@ -83,6 +89,7 @@
 .filter-group {
     display: flex;
     flex-direction: column;
+    position: relative;
 }
 
 .filter-label {
@@ -99,6 +106,7 @@
     border-radius: 8px;
     font-size: 14px;
     transition: all 0.3s ease;
+    background: white;
 }
 
 .search-input:focus {
@@ -107,19 +115,47 @@
     box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
 }
 
+/* 美化下拉框样式 */
 .filter-select {
     width: 100%;
-    padding: 12px;
+    padding: 12px 40px 12px 12px;
     border: 2px solid #ecf0f1;
     border-radius: 8px;
     font-size: 14px;
-    background: white;
+    background: white url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%237f8c8d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+    background-size: 16px;
     cursor: pointer;
+    appearance: none;
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
 }
 
 .filter-select:focus {
     outline: none;
     border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.filter-select:hover {
+    border-color: #bdc3c7;
+}
+
+/* 下拉框动画效果 */
+.filter-select-wrapper {
+    position: relative;
+}
+
+.filter-select-wrapper::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+    z-index: 2;
 }
 
 /* 笔记表格 */
@@ -128,6 +164,7 @@
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    position: relative;
 }
 
 .notes-table {
@@ -151,6 +188,10 @@
     font-size: 14px;
 }
 
+.notes-table tr {
+    transition: background-color 0.2s ease;
+}
+
 .notes-table tr:hover {
     background: #f8f9fa;
 }
@@ -172,6 +213,11 @@
     border-radius: 8px;
     color: #3498db;
     font-size: 18px;
+    transition: transform 0.2s ease;
+}
+
+.file-icon:hover {
+    transform: scale(1.1);
 }
 
 .file-details {
@@ -246,10 +292,15 @@
 
 .action-icon:hover {
     background: #f8f9fa;
+    transform: translateY(-2px);
+}
+
+.action-preview:hover {
+    color: #3498db;
 }
 
 .action-download:hover {
-    color: #3498db;
+    color: #27ae60;
 }
 
 .action-delete:hover {
@@ -318,6 +369,7 @@
 .pagination-btn:hover:not(:disabled) {
     border-color: #3498db;
     color: #3498db;
+    transform: translateY(-2px);
 }
 
 .pagination-btn:disabled {
@@ -358,6 +410,136 @@
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* 按钮样式 */
+.primary-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.primary-btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.outline-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background: white;
+    color: #3498db;
+    border: 2px solid #3498db;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.outline-btn:hover {
+    background: #3498db;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+    background: #2980b9;
+    transform: translateY(-2px);
+}
+
+/* 预览模态框样式 */
+.preview-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.preview-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 90%;
+    max-height: 90%;
+    width: auto;
+    height: auto;
+    overflow: auto;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    animation: scaleIn 0.3s ease;
+}
+
+.preview-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2001;
+    transition: all 0.3s ease;
+}
+
+.preview-close:hover {
+    background: rgba(0,0,0,0.7);
+    transform: rotate(90deg);
+}
+
+.preview-body {
+    padding: 20px;
+    text-align: center;
+}
+
+/* 预览动画 */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
 }
 
 /* 响应式设计 */
@@ -426,6 +608,11 @@
     .notes-table td:nth-child(5) {
         display: none;
     }
+    
+    .preview-content {
+        max-width: 95%;
+        max-height: 95%;
+    }
 }
 </style>
 {% endblock %}
@@ -493,6 +680,7 @@
                     <option value="pdf">PDF文档</option>
                     <option value="image">图片文件</option>
                     <option value="document">办公文档</option>
+                    <option value="icstk">ICSTK文件</option>
                     <option value="other">其他文件</option>
                 </select>
             </div>
@@ -575,12 +763,12 @@
 </div>
 
 <!-- 预览模态框 -->
-<div id="preview-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 2000; align-items: center; justify-content: center;">
-    <div style="background: white; border-radius: 12px; max-width: 90%; max-height: 90%; width: auto; height: auto; overflow: auto; position: relative;">
-        <button onclick="closePreviewModal()" style="position: absolute; top: 12px; right: 12px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2001;">
+<div id="preview-modal" class="preview-modal">
+    <div class="preview-content">
+        <button class="preview-close" onclick="closePreviewModal()">
             <i class="material-icons">close</i>
         </button>
-        <div id="preview-content" style="padding: 20px; text-align: center;">
+        <div class="preview-body" id="preview-content">
             <!-- 预览内容将在这里动态加载 -->
         </div>
     </div>
@@ -597,6 +785,7 @@ let noteToDelete = null;
 document.addEventListener('DOMContentLoaded', function() {
     loadNotes();
     loadStats();
+    initPreviewFunctionality();
 });
 
 // 加载笔记列表
@@ -731,7 +920,8 @@ function getFileIcon(fileType) {
         'ppt': 'slideshow',
         'pptx': 'slideshow',
         'zip': 'folder_zip',
-        'rar': 'folder_zip'
+        'rar': 'folder_zip',
+        'icstk': 'architecture' // ICSTK文件使用建筑图标
     };
     return iconMap[fileType] || 'insert_drive_file';
 }
@@ -814,6 +1004,7 @@ function applyFilters() {
             'pdf': 'pdf',
             'image': 'png,jpg,jpeg,gif,bmp',
             'document': 'doc,docx,ppt,pptx,txt,md',
+            'icstk': 'icstk',
             'other': 'zip,rar'
         };
         currentFilters.file_type = typeMap[filetype] || filetype;
@@ -823,205 +1014,6 @@ function applyFilters() {
     currentPage = 1;
     loadNotes();
 }
-// 在文件末尾的script标签内，替换现有的预览相关代码：
-
-// 预览笔记
-function previewNote(noteId, fileType) {
-    const previewModal = document.getElementById('preview-modal');
-    const previewContent = document.getElementById('preview-content');
-    
-    // 检查元素是否存在
-    if (!previewModal || !previewContent) {
-        console.error('Preview modal elements not found');
-        showNotesMessage('预览功能初始化失败，请刷新页面重试', 'error');
-        return;
-    }
-    
-    // 显示加载状态
-    previewContent.innerHTML = `
-        <div style="padding: 40px;">
-            <div class="loading-spinner" style="margin: 0 auto;"></div>
-            <p style="margin-top: 16px; color: #7f8c8d;">正在加载预览...</p>
-        </div>
-    `;
-    
-    previewModal.style.display = 'flex';
-    
-    // 根据文件类型选择预览方式
-    const fileUrl = `/web/notes/notes/${noteId}/download`;
-    
-    if (isImageFile(fileType)) {
-        previewImage(fileUrl, previewContent);
-    } else if (fileType === 'pdf') {
-        previewPDF(fileUrl, previewContent);
-    } else if (isTextFile(fileType)) {
-        previewText(fileUrl, previewContent);
-    } else {
-        previewUnsupported(fileType, previewContent);
-    }
-}
-
-// 判断是否为图片文件
-function isImageFile(fileType) {
-    return ['png', 'jpg', 'jpeg', 'gif', 'bmp'].includes(fileType);
-}
-
-// 判断是否为文本文件
-function isTextFile(fileType) {
-    return ['txt', 'md'].includes(fileType);
-}
-
-// 预览图片
-function previewImage(fileUrl, container) {
-    if (!container) return;
-    
-    container.innerHTML = `
-        <img src="${fileUrl}" style="max-width: 100%; max-height: 80vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" 
-             onload="this.style.opacity='1'" 
-             onerror="previewError(this)"
-             style="opacity: 0; transition: opacity 0.3s ease;">
-        <p style="margin-top: 12px; color: #7f8c8d; font-size: 14px;">图片预览 - 使用鼠标滚轮缩放</p>
-    `;
-}
-
-// 预览PDF（使用浏览器内置PDF查看器）
-function previewPDF(fileUrl, container) {
-    if (!container) return;
-    
-    container.innerHTML = `
-        <embed src="${fileUrl}#toolbar=1&navpanes=1" type="application/pdf" width="100%" height="600px" style="border-radius: 8px; border: 1px solid #ecf0f1;">
-        <div style="margin-top: 12px;">
-            <a href="${fileUrl}" target="_blank" class="outline-btn" style="margin-right: 8px;">
-                <i class="material-icons">open_in_new</i>在新窗口打开
-            </a>
-            <button onclick="downloadNoteFromPreview('${fileUrl}')" class="primary-btn">
-                <i class="material-icons">download</i>下载PDF
-            </button>
-        </div>
-    `;
-}
-
-// 预览文本文件
-function previewText(fileUrl, container) {
-    if (!container) return;
-    
-    fetch(fileUrl)
-        .then(response => {
-            if (!response.ok) throw new Error('加载失败');
-            return response.text();
-        })
-        .then(text => {
-            if (!container) return;
-            
-            container.innerHTML = `
-                <div style="text-align: left; max-width: 800px; margin: 0 auto;">
-                    <pre style="background: #f8f9fa; padding: 20px; border-radius: 8px; max-height: 400px; overflow: auto; white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.4;">${escapeHtml(text)}</pre>
-                    <div style="margin-top: 12px;">
-                        <button onclick="downloadNoteFromPreview('${fileUrl}')" class="primary-btn">
-                            <i class="material-icons">download</i>下载文本
-                        </button>
-                    </div>
-                </div>
-            `;
-        })
-        .catch(error => {
-            if (!container) return;
-            
-            container.innerHTML = `
-                <div style="padding: 40px;">
-                    <i class="material-icons" style="font-size: 48px; color: #e74c3c;">error</i>
-                    <h3 style="margin: 16px 0; color: #2c3e50;">加载失败</h3>
-                    <p style="color: #7f8c8d;">无法加载文本内容：${error.message}</p>
-                    <button onclick="downloadNoteFromPreview('${fileUrl}')" class="primary-btn" style="margin-top: 16px;">
-                        <i class="material-icons">download</i>直接下载文件
-                    </button>
-                </div>
-            `;
-        });
-}
-
-// 不支持预览的文件类型
-function previewUnsupported(fileType, container) {
-    if (!container) return;
-    
-    container.innerHTML = `
-        <div style="padding: 40px;">
-            <i class="material-icons" style="font-size: 48px; color: #bdc3c7;">insert_drive_file</i>
-            <h3 style="margin: 16px 0; color: #2c3e50;">不支持预览</h3>
-            <p style="margin-bottom: 24px; color: #7f8c8d;">该文件类型 (.${fileType}) 不支持在线预览，请下载后查看。</p>
-            <button onclick="closePreviewModal()" class="outline-btn" style="margin-right: 12px;">取消</button>
-            <button onclick="downloadNoteFromPreview()" class="primary-btn">
-                <i class="material-icons">download</i>下载文件
-            </button>
-        </div>
-    `;
-}
-
-// 从预览模态框下载文件
-function downloadNoteFromPreview(fileUrl) {
-    if (fileUrl) {
-        window.open(fileUrl, '_blank');
-    }
-    closePreviewModal();
-}
-
-// 关闭预览模态框
-function closePreviewModal() {
-    const previewModal = document.getElementById('preview-modal');
-    const previewContent = document.getElementById('preview-content');
-    
-    if (previewModal) {
-        previewModal.style.display = 'none';
-    }
-    if (previewContent) {
-        previewContent.innerHTML = '';
-    }
-}
-
-// 图片加载错误处理
-function previewError(imgElement) {
-    const container = imgElement.parentElement;
-    if (!container) return;
-    
-    container.innerHTML = `
-        <div style="padding: 40px;">
-            <i class="material-icons" style="font-size: 48px; color: #e74c3c;">broken_image</i>
-            <h3 style="margin: 16px 0; color: #2c3e50;">图片加载失败</h3>
-            <p style="color: #7f8c8d;">无法加载图片预览，请尝试下载后查看。</p>
-            <button onclick="closePreviewModal()" class="primary-btn" style="margin-top: 16px;">
-                <i class="material-icons">close</i>关闭
-            </button>
-        </div>
-    `;
-}
-
-// 初始化预览功能（在DOM加载完成后调用）
-function initPreviewFunctionality() {
-    // 添加键盘支持（ESC键关闭预览）
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closePreviewModal();
-        }
-    });
-
-    // 点击模态框背景关闭预览（使用事件委托）
-    document.addEventListener('click', function(e) {
-        const previewModal = document.getElementById('preview-modal');
-        if (previewModal && e.target === previewModal) {
-            closePreviewModal();
-        }
-    });
-}
-
-// 在DOM加载完成后初始化预览功能
-document.addEventListener('DOMContentLoaded', function() {
-    // 原有的初始化代码...
-    loadNotes();
-    loadStats();
-    
-    // 新增：初始化预览功能
-    initPreviewFunctionality();
-});
 
 // 下载笔记
 function downloadNote(noteId) {
@@ -1114,5 +1106,260 @@ document.getElementById('search-input').addEventListener('keypress', function(e)
         applyFilters();
     }
 });
+
+// ========== 预览功能 ==========
+
+// 初始化预览功能
+function initPreviewFunctionality() {
+    // 添加键盘支持（ESC键关闭预览）
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closePreviewModal();
+        }
+    });
+
+    // 点击模态框背景关闭预览（使用事件委托）
+    document.addEventListener('click', function(e) {
+        const previewModal = document.getElementById('preview-modal');
+        if (previewModal && e.target === previewModal) {
+            closePreviewModal();
+        }
+    });
+}
+
+// 判断是否为图片文件
+function isImageFile(fileType) {
+    return ['png', 'jpg', 'jpeg', 'gif', 'bmp'].includes(fileType);
+}
+
+// 判断是否为文本文件
+function isTextFile(fileType) {
+    return ['txt', 'md'].includes(fileType);
+}
+
+// 预览笔记
+function previewNote(noteId, fileType) {
+    const previewModal = document.getElementById('preview-modal');
+    const previewContent = document.getElementById('preview-content');
+    
+    // 检查元素是否存在
+    if (!previewModal || !previewContent) {
+        console.error('Preview modal elements not found');
+        showNotesMessage('预览功能初始化失败，请刷新页面重试', 'error');
+        return;
+    }
+    
+    // 显示加载状态
+    previewContent.innerHTML = `
+        <div style="padding: 40px;">
+            <div class="loading-spinner" style="margin: 0 auto;"></div>
+            <p style="margin-top: 16px; color: #7f8c8d;">正在加载预览...</p>
+        </div>
+    `;
+    
+    previewModal.style.display = 'flex';
+    
+    // 使用新的预览路由，不增加下载计数
+    const previewUrl = `/web/notes/notes/${noteId}/preview`;
+    const downloadUrl = `/web/notes/notes/${noteId}/download`;
+    
+    if (isImageFile(fileType)) {
+        previewImage(previewUrl, downloadUrl, fileType, previewContent);
+    } else if (fileType === 'pdf') {
+        previewPDF(previewUrl, downloadUrl, previewContent);
+    } else if (isTextFile(fileType)) {
+        previewText(previewUrl, downloadUrl, previewContent);
+    } else if (fileType === 'icstk') {
+        previewICSTK(previewUrl, downloadUrl, previewContent);
+    } else {
+        previewUnsupported(fileType, downloadUrl, previewContent);
+    }
+}
+
+// 预览图片
+function previewImage(previewUrl, downloadUrl, fileType, container) {
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div style="text-align: center;">
+            <img src="${previewUrl}" 
+                 alt="预览图片"
+                 style="max-width: 100%; max-height: 70vh; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: pointer;"
+                 onclick="openInNewTab('${previewUrl}')"
+                 onload="this.style.opacity='1'" 
+                 onerror="previewError(this, '${downloadUrl}')"
+                 style="opacity: 0; transition: opacity 0.3s ease;">
+            <div style="margin-top: 16px; display: flex; gap: 12px; justify-content: center;">
+                <button onclick="openInNewTab('${previewUrl}')" class="outline-btn">
+                    <i class="material-icons">open_in_new</i>新标签页查看
+                </button>
+                <button onclick="downloadNoteFromPreview('${downloadUrl}')" class="primary-btn">
+                    <i class="material-icons">download</i>下载图片
+                </button>
+            </div>
+            <p style="margin-top: 12px; color: #7f8c8d; font-size: 14px;">
+                点击图片或按钮在新标签页查看 • 使用鼠标滚轮缩放
+            </p>
+        </div>
+    `;
+}
+
+// 预览PDF
+function previewPDF(previewUrl, downloadUrl, container) {
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div style="text-align: center;">
+            <embed src="${previewUrl}#toolbar=1&navpanes=1" 
+                   type="application/pdf" 
+                   width="100%" 
+                   height="500px" 
+                   style="border-radius: 8px; border: 1px solid #ecf0f1;">
+            <div style="margin-top: 16px; display: flex; gap: 12px; justify-content: center;">
+                <button onclick="openInNewTab('${previewUrl}')" class="outline-btn">
+                    <i class="material-icons">open_in_new</i>新标签页查看
+                </button>
+                <button onclick="downloadNoteFromPreview('${downloadUrl}')" class="primary-btn">
+                    <i class="material-icons">download</i>下载PDF
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// 预览文本文件
+function previewText(previewUrl, downloadUrl, container) {
+    if (!container) return;
+    
+    fetch(previewUrl)
+        .then(response => {
+            if (!response.ok) throw new Error('加载失败');
+            return response.text();
+        })
+        .then(text => {
+            if (!container) return;
+            
+            container.innerHTML = `
+                <div style="text-align: left; max-width: 800px; margin: 0 auto;">
+                    <div style="display: flex; gap: 12px; justify-content: center; margin-bottom: 16px;">
+                        <button onclick="openInNewTab('${previewUrl}')" class="outline-btn">
+                            <i class="material-icons">open_in_new</i>新标签页查看
+                        </button>
+                        <button onclick="downloadNoteFromPreview('${downloadUrl}')" class="primary-btn">
+                            <i class="material-icons">download</i>下载文本
+                        </button>
+                    </div>
+                    <pre style="background: #f8f9fa; padding: 20px; border-radius: 8px; max-height: 400px; overflow: auto; white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.4;">${escapeHtml(text)}</pre>
+                </div>
+            `;
+        })
+        .catch(error => {
+            if (!container) return;
+            
+            container.innerHTML = `
+                <div style="padding: 40px; text-align: center;">
+                    <i class="material-icons" style="font-size: 48px; color: #e74c3c;">error</i>
+                    <h3 style="margin: 16px 0; color: #2c3e50;">加载失败</h3>
+                    <p style="color: #7f8c8d; margin-bottom: 24px;">无法加载文本内容：${error.message}</p>
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button onclick="openInNewTab('${previewUrl}')" class="outline-btn">
+                            <i class="material-icons">open_in_new</i>尝试新标签页查看
+                        </button>
+                        <button onclick="downloadNoteFromPreview('${downloadUrl}')" class="primary-btn">
+                            <i class="material-icons">download</i>直接下载文件
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+}
+
+// 预览ICSTK文件
+function previewICSTK(previewUrl, downloadUrl, container) {
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div style="padding: 40px; text-align: center;">
+            <i class="material-icons" style="font-size: 64px; color: #9b59b6;">architecture</i>
+            <h3 style="margin: 16px 0; color: #2c3e50;">ICSTK 文件</h3>
+            <p style="margin-bottom: 24px; color: #7f8c8d;">
+                ICSTK 文件需要专用软件打开，无法在浏览器中预览。
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="openInNewTab('${previewUrl}')" class="outline-btn">
+                    <i class="material-icons">open_in_new</i>尝试新标签页查看
+                </button>
+                <button onclick="downloadNoteFromPreview('${downloadUrl}')" class="primary-btn">
+                    <i class="material-icons">download</i>下载文件
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// 不支持预览的文件类型
+function previewUnsupported(fileType, downloadUrl, container) {
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div style="padding: 40px; text-align: center;">
+            <i class="material-icons" style="font-size: 48px; color: #bdc3c7;">insert_drive_file</i>
+            <h3 style="margin: 16px 0; color: #2c3e50;">不支持预览</h3>
+            <p style="margin-bottom: 24px; color: #7f8c8d;">该文件类型 (.${fileType}) 不支持在线预览，请下载后查看。</p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="closePreviewModal()" class="outline-btn">取消</button>
+                <button onclick="downloadNoteFromPreview('${downloadUrl}')" class="primary-btn">
+                    <i class="material-icons">download</i>下载文件
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+// 在新标签页打开
+function openInNewTab(url) {
+    window.open(url, '_blank');
+}
+
+// 从预览模态框下载文件
+function downloadNoteFromPreview(downloadUrl) {
+    if (downloadUrl) {
+        window.open(downloadUrl, '_blank');
+    }
+    closePreviewModal();
+}
+
+// 关闭预览模态框
+function closePreviewModal() {
+    const previewModal = document.getElementById('preview-modal');
+    const previewContent = document.getElementById('preview-content');
+    
+    if (previewModal) {
+        previewModal.style.display = 'none';
+    }
+    if (previewContent) {
+        previewContent.innerHTML = '';
+    }
+}
+
+// 图片加载错误处理
+function previewError(imgElement, downloadUrl) {
+    const container = imgElement.parentElement;
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div style="padding: 40px; text-align: center;">
+            <i class="material-icons" style="font-size: 48px; color: #e74c3c;">broken_image</i>
+            <h3 style="margin: 16px 0; color: #2c3e50;">图片加载失败</h3>
+            <p style="color: #7f8c8d; margin-bottom: 24px;">无法加载图片预览，请尝试在新标签页查看或下载文件。</p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="closePreviewModal()" class="outline-btn">关闭</button>
+                <button onclick="downloadNoteFromPreview('${downloadUrl}')" class="primary-btn">
+                    <i class="material-icons">download</i>下载文件
+                </button>
+            </div>
+        </div>
+    `;
+}
 </script>
 {% endblock %}

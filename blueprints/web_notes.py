@@ -149,6 +149,59 @@ def delete_class_note(note_id):
         print(f"删除笔记失败: {str(e)}")
         return jsonify({'error': '删除笔记失败'}), 500
     
+@web_notes_bp.route('/notes/<int:note_id>/preview')
+@login_required
+@teacher_required
+def preview_note(note_id):
+    user = db.session.get(User, session['user_id'])
+    
+    note = Note.query.get_or_404(note_id)
+    
+    # 检查权限：班主任或笔记所在班级的授课教师
+    has_permission = False
+    
+    if note.class_obj.teacher_id == user.id:
+        has_permission = True
+    else:
+        teacher_class = TeacherClass.query.filter_by(
+            class_id=note.class_id,
+            teacher_id=user.id,
+            is_approved=True
+        ).first()
+        if teacher_class:
+            has_permission = True
+    
+    if not has_permission:
+        return jsonify({'error': '无权限预览该笔记'}), 403
+    
+    try:
+        # 构建完整文件路径
+        file_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'uploads',
+            str(note.class_id),
+            note.file_path
+        )
+        
+        if not os.path.exists(file_path):
+            return jsonify({'error': '文件不存在'}), 404
+        response = send_file(
+            file_path,
+            as_attachment=False,  # 不作为附件下载
+            download_name=note.original_filename,
+            mimetype=note.mime_type
+        )
+        
+        # 对于某些文件类型，设置inline显示
+        if note.file_type in ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'bmp']:
+            response.headers['Content-Disposition'] = f'inline; filename="{note.original_filename}"'
+        
+        return response
+        
+    except Exception as e:
+        print(f"预览笔记失败: {str(e)}")
+        return jsonify({'error': '预览笔记失败'}), 500
+
 @web_notes_bp.route('/notes/<int:note_id>/download')
 @login_required
 @teacher_required
