@@ -12,7 +12,7 @@
                     <p class="login-subtitle">请选择您的身份进行登录</p>
                     
                     <div class="login-actions">
-                        <a href="{{ url_for('auth.casdoor_login_teacher') }}" class="primary-btn large-btn teacher-login-btn">
+                        <a href="{{ url_for('auth.casdoor_login_teacher') }}" class="primary-btn large-btn login-btn teacher-login-btn">
                             <i class="material-icons btn-icon">school</i>
                             <span class="btn-label">教师登录</span>
                         </a>
@@ -21,7 +21,7 @@
                             <span>或</span>
                         </div>
                         
-                        <a href="{{ url_for('auth.casdoor_login_student') }}" class="outline-btn large-btn student-login-btn">
+                        <a href="{{ url_for('auth.casdoor_login_student') }}" class="primary-btn large-btn login-btn student-login-btn">
                             <i class="material-icons btn-icon">person</i>
                             <span class="btn-label">学生登录</span>
                         </a>
@@ -30,8 +30,8 @@
                             <span>或</span>
                         </div>
                         
-                        <a href="{{ url_for('developer.casdoor_login_developer') }}" class="outline-btn large-btn student-login-btn">
-                            <i class="material-icons btn-icon">developer</i>
+                        <a href="{{ url_for('developer.casdoor_login_developer') }}" class="primary-btn large-btn login-btn developer-login-btn">
+                            <i class="material-icons btn-icon">add_box</i>
                             <span class="btn-label">开发者登录</span>
                         </a>
                     </div>
@@ -62,6 +62,13 @@
                             <p class="app-card-description">为学生设计的简化认证流程，方便快捷地访问学习资源。</p>
                         </div>
                     </div>
+
+                    <div class="app-card developer-app">
+                        <div class="app-card-content">
+                            <h3 class="app-card-title">开发者认证应用</h3>
+                            <p class="app-card-description">为开发者设计的专用认证通道，用于系统开发和维护。</p>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="feature-list">
@@ -70,7 +77,7 @@
                         <span class="feature-text">安全认证</span>
                     </div>
                     <div class="feature-item">
-                        <i class="material-icons feature-icon">convenience</i>
+                        <i class="material-icons feature-icon">login</i>
                         <span class="feature-text">一键登录</span>
                     </div>
                     <div class="feature-item">

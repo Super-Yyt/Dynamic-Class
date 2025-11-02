@@ -3,50 +3,122 @@
 {% block title %}开发者注册 - Dlass{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0">开发者注册</h4>
+<div class="developer-container">
+    <div class="developer-form-container">
+        <div class="form-section">
+            <h3 class="form-section-title">开发者注册</h3>
+            
+            <p class="form-hint" style="margin-bottom: 24px;">
+                注册成为开发者，创建您自己的应用来集成Dlass系统。
+            </p>
+            
+            <form method="POST">
+                <div class="form-group">
+                    <label for="company" class="form-label">公司/组织名称 *</label>
+                    <input type="text" class="form-input" id="company" name="company" 
+                           value="{{ request.form.company }}" required placeholder="输入公司或组织名称">
+                    <div class="form-hint">您的公司、组织或个人名称</div>
                 </div>
-                <div class="card-body">
-                    <p class="text-muted mb-4">
-                        注册成为开发者，创建您自己的应用来集成Dlass系统。
-                    </p>
-                    
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label for="company" class="form-label">公司/组织名称 *</label>
-                            <input type="text" class="form-control" id="company" name="company" 
-                                   value="{{ request.form.company }}" required>
-                            <div class="form-text">您的公司、组织或个人名称</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="description" class="form-label">开发者描述</label>
-                            <textarea class="form-control" id="description" name="description" 
-                                      rows="4">{{ request.form.description }}</textarea>
-                            <div class="form-text">简要描述您开发的应用类型和使用场景</div>
-                        </div>
-                        
-                        <div class="alert alert-info">
-                            <h6><i class="bi bi-info-circle"></i> 注册说明</h6>
-                            <ul class="mb-0">
-                                <li>开发者账号需要审核通过后才能创建应用</li>
-                                <li>请确保提供真实有效的组织信息</li>
-                                <li>应用创建后可以获得API访问权限</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary">注册开发者</button>
-                            <a href="{{ url_for('developer.developer_console') }}" class="btn btn-outline-secondary">返回控制台</a>
-                        </div>
-                    </form>
+                
+                <div class="form-group">
+                    <label for="description" class="form-label">开发者描述</label>
+                    <textarea class="form-textarea" id="description" name="description" 
+                              rows="4" placeholder="简要描述您开发的应用类型和使用场景">{{ request.form.description }}</textarea>
+                    <div class="form-hint">简要描述您开发的应用类型和使用场景</div>
+                </div>
+                
+                <!-- 注册说明 -->
+                <div class="alert-card alert-info">
+                    <h6>
+                        <i class="material-icons">info</i>
+                        注册说明
+                    </h6>
+                    <ul>
+                        <li>开发者账号需要审核通过后才能创建应用</li>
+                        <li>请确保提供真实有效的组织信息</li>
+                        <li>应用创建后可以获得API访问权限</li>
+                        <li>遵守平台的使用条款和开发规范</li>
+                    </ul>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn-developer" style="width: 100%;">
+                        <i class="material-icons">person_add</i>
+                        注册开发者
+                    </button>
+                    <a href="{{ url_for('developer.developer_console') }}" class="btn-developer-outline" style="width: 100%; text-align: center;">
+                        <i class="material-icons">arrow_back</i>
+                        返回控制台
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- 开发者权益 -->
+        <div class="form-section">
+            <h3 class="form-section-title">开发者权益</h3>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <i class="material-icons feature-icon">api</i>
+                    <h4 class="feature-title">API访问</h4>
+                    <p class="feature-description">获得完整的API访问权限，集成Dlass系统的各种功能</p>
+                </div>
+                
+                <div class="feature-card">
+                    <i class="material-icons feature-icon">security</i>
+                    <h4 class="feature-title">安全认证</h4>
+                    <p class="feature-description">使用OAuth 2.0和安全Token进行应用认证</p>
+                </div>
+                
+                <div class="feature-card">
+                    <i class="material-icons feature-icon">support</i>
+                    <h4 class="feature-title">技术支持</h4>
+                    <p class="feature-description">获得专业的技术支持和完善的文档资源</p>
+                </div>
+                
+                <div class="feature-card">
+                    <i class="material-icons feature-icon">analytics</i>
+                    <h4 class="feature-title">数据分析</h4>
+                    <p class="feature-description">访问使用统计和分析数据，优化您的应用</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.feature-card {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    border-left: 4px solid #3498db;
+}
+
+.feature-icon {
+    font-size: 36px;
+    color: #3498db;
+    margin-bottom: 12px;
+}
+
+.feature-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #2c3e50;
+}
+
+.feature-description {
+    color: #7f8c8d;
+    font-size: 14px;
+    line-height: 1.5;
+}
+</style>
 {% endblock %}

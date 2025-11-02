@@ -3,53 +3,58 @@
 {% block title %}创建应用 - 开发者控制台{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0">创建新应用</h4>
+<div class="developer-container">
+    <div class="developer-form-container">
+        <div class="form-section">
+            <h3 class="form-section-title">创建新应用</h3>
+            
+            <form method="POST">
+                <div class="form-group">
+                    <label for="app_name" class="form-label">应用名称 *</label>
+                    <input type="text" class="form-input" id="app_name" name="app_name" 
+                           value="{{ request.form.app_name }}" required placeholder="输入应用名称">
+                    <div class="form-hint">应用的显示名称，用户可以看到的名称</div>
                 </div>
-                <div class="card-body">
-                    <form method="POST">
-                        <div class="mb-3">
-                            <label for="app_name" class="form-label">应用名称 *</label>
-                            <input type="text" class="form-control" id="app_name" name="app_name" 
-                                   value="{{ request.form.app_name }}" required>
-                            <div class="form-text">应用的显示名称，用户可以看到的名称</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="description" class="form-label">应用描述</label>
-                            <textarea class="form-control" id="description" name="description" 
-                                      rows="3">{{ request.form.description }}</textarea>
-                            <div class="form-text">简要描述您的应用功能和用途</div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="callback_url" class="form-label">回调URL</label>
-                            <input type="url" class="form-control" id="callback_url" name="callback_url" 
-                                   value="{{ request.form.callback_url }}" placeholder="https://">
-                            <div class="form-text">OAuth回调地址（可选）</div>
-                        </div>
-                        
-                        <div class="alert alert-warning">
-                            <h6><i class="bi bi-exclamation-triangle"></i> 重要提示</h6>
-                            <ul class="mb-0">
-                                <li>应用创建后，您将获得App ID和App Secret</li>
-                                <li>App Secret只会显示一次，请妥善保存</li>
-                                <li>确保不要在前端代码中暴露App Secret</li>
-                                <li>应用需要审核通过后才能访问API</li>
-                            </ul>
-                        </div>
-                        
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ url_for('developer.developer_console') }}" class="btn btn-outline-secondary me-md-2">取消</a>
-                            <button type="submit" class="btn btn-primary">创建应用</button>
-                        </div>
-                    </form>
+                
+                <div class="form-group">
+                    <label for="description" class="form-label">应用描述</label>
+                    <textarea class="form-textarea" id="description" name="description" 
+                              rows="3" placeholder="简要描述您的应用功能和用途">{{ request.form.description }}</textarea>
+                    <div class="form-hint">简要描述您的应用功能和用途</div>
                 </div>
-            </div>
+                
+                <div class="form-group">
+                    <label for="callback_url" class="form-label">回调URL</label>
+                    <input type="url" class="form-input" id="callback_url" name="callback_url" 
+                           value="{{ request.form.callback_url }}" placeholder="https://example.com/callback">
+                    <div class="form-hint">OAuth回调地址（可选）</div>
+                </div>
+                
+                <!-- 重要提示 -->
+                <div class="alert-card alert-warning">
+                    <h6>
+                        <i class="material-icons">warning</i>
+                        重要提示
+                    </h6>
+                    <ul>
+                        <li>应用创建后，您将获得App ID和App Secret</li>
+                        <li>App Secret只会显示一次，请妥善保存</li>
+                        <li>确保不要在前端代码中暴露App Secret</li>
+                        <li>应用需要审核通过后才能访问API</li>
+                    </ul>
+                </div>
+                
+                <div class="form-actions">
+                    <a href="{{ url_for('developer.developer_console') }}" class="btn-developer-outline">
+                        <i class="material-icons">arrow_back</i>
+                        取消
+                    </a>
+                    <button type="submit" class="btn-developer">
+                        <i class="material-icons">add_circle</i>
+                        创建应用
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
