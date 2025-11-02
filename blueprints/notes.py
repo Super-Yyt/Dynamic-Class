@@ -20,6 +20,7 @@ ALLOWED_EXTENSIONS = {
     'ppt', 'pptx',  # PowerPoint
     'doc', 'docx',  # Word文档
     'zip', 'rar',  # 压缩文件
+    'icstk',
 }
 
 def allowed_file(filename):
